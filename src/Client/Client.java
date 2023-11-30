@@ -1,5 +1,7 @@
 package Client;
 
+import Messages.JsonMessageExtractor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,7 +37,12 @@ public class Client {
                 // Gets stuck here on exit. Waits for a response from the server but one will never come if the userInput is closed.
                 String received = reader.readLine();
                 if(received == null) return;
-                System.out.println(received);
+                if(received.equals("PING")){
+                    writer.println("PONG");
+                    System.out.println("Heartbeat Test Successful");
+                } else {
+                    System.out.println("From Server: " + JsonMessageExtractor.extractInformation(received));
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

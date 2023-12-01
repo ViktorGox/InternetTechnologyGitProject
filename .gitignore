@@ -1,5 +1,2 @@
-/out/production/18/Client/Client.class
-/out/production/18/Messages/MessageBroadcast.class
-/out/production/18/Messages/JsonMessageExtractor.class
-/out/production/18/Messages/MessageLogin.class
-/out/production/18/Client/UserInput.class
+/.idea/.gitignore
+/out/

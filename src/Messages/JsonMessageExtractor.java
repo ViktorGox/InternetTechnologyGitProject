@@ -35,8 +35,29 @@ public class JsonMessageExtractor {
         }
         StringBuilder stringBuilder = new StringBuilder();
         for (String value : values) {
-            stringBuilder.append(value).append(" ");
+            stringBuilder.append(isError(value)).append(" ");
         }
         return stringBuilder.toString();
+    }
+
+    private static String isError(String value){
+        if(value.equals("5000")){
+            value = "User already logged in";
+        } else if (value.equals("5001")) {
+            value = "Username has an invalid format or length";
+        } else if (value.equals("5002")){
+            value = "User cannot login twice";
+        } else if (value.equals("6000")){
+            value = "User is not logged in";
+        } else if (value.equals("7000")){
+            value = "Pong timeout";
+        } else if (value.equals("7001")) {
+            value = "Unterminated message";
+        } else if (value.equals("8000")){
+            value = "Pong without ping";
+        } else if (value.equals("ERROR")) {
+            value = "";
+        }
+        return value;
     }
 }

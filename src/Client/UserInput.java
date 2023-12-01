@@ -54,7 +54,7 @@ public class UserInput implements Runnable {
 
     public void logIn() {
         System.out.println("Enter username: ");
-        username = s.nextLine().toLowerCase();
+        username = s.nextLine();
         MessageLogin messageLogin = new MessageLogin(username);
         try {
             writer.println("LOGIN " + messageLogin.mapToJson());

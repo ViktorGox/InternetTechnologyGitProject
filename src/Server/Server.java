@@ -6,9 +6,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 public class Server {
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
+    private final Map<String, Client> clients = new HashMap<>();
 
     public static void main(String[] args) {
         new Server().start();
@@ -34,26 +38,18 @@ public class Server {
     }
 
     private void handleClient(Socket socket) {
-        try (
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        ) {
-            String inputLine;
-            while ((inputLine = reader.readLine()) != null) {
-                System.out.println("Received from client: " + inputLine);
-                // Add your logic to process the inputLine or perform some action
+        try {
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                // Example: Respond back to the client
-                writer.println("Server: Message received - " + inputLine);
-            }
+            Client newClient = new Client(writer, reader);
+            Random random = new Random();
+            clients.put(String.valueOf(random.nextInt(0,10)), newClient);
+
+            Thread newClientThread = new Thread(newClient);
+            newClientThread.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 }

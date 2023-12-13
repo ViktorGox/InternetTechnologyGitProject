@@ -3,12 +3,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JsonMessageExtractor {
 
-    private static List<String> extractInformation(String jsonMessage) {
-        List<String> values = new ArrayList<>();
+    public static Map<String, String> extractInformation(String jsonMessage) {
+        Map<String, String> values = new HashMap<>();
 
         int openingBracketIndex = jsonMessage.indexOf('{');
         int closingBracketIndex = jsonMessage.lastIndexOf('}');
@@ -20,12 +22,10 @@ public class JsonMessageExtractor {
                 ObjectMapper objectMapper = new ObjectMapper();
                 JsonNode jsonNode = objectMapper.readTree(jsonString);
 
-                jsonNode.elements().forEachRemaining(value -> {
-                    if (value.isValueNode()) {
-                        values.add(value.asText());
-                    } else {
-                        values.add(value.toString());
-                    }
+                jsonNode.fields().forEachRemaining(entry -> {
+                    String fieldName = entry.getKey();
+                    String fieldValue = entry.getValue().textValue();
+                    values.put(fieldName, fieldValue);
                 });
             } catch (Exception e) {
                 throw new JsonExtractorError("Error parsing JSON: " + e.getMessage());
@@ -57,10 +57,10 @@ public class JsonMessageExtractor {
         return value;
     }
 
-    public static String extractInformationFromServer(String jsonMessage){
-        List<String> values = extractInformation(jsonMessage);
+    public static String extractInformationFromServer(String jsonMessage) {
+        Map<String, String> values = extractInformation(jsonMessage);
         StringBuilder stringBuilder = new StringBuilder();
-        for (String value : values) {
+        for (String value : values.values()) {
             stringBuilder.append(isError(value)).append(" ");
         }
         return stringBuilder.toString();

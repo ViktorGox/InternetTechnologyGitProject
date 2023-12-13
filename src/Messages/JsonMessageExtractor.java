@@ -7,7 +7,7 @@ import java.util.List;
 
 public class JsonMessageExtractor {
 
-    public static String extractInformation(String jsonMessage) {
+    private static List<String> extractInformation(String jsonMessage) {
         List<String> values = new ArrayList<>();
 
         int openingBracketIndex = jsonMessage.indexOf('{');
@@ -33,11 +33,7 @@ public class JsonMessageExtractor {
         } else {
             System.out.println("Invalid JSON message format");
         }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (String value : values) {
-            stringBuilder.append(isError(value)).append(" ");
-        }
-        return stringBuilder.toString();
+        return values;
     }
 
     private static String isError(String value){
@@ -59,5 +55,14 @@ public class JsonMessageExtractor {
             value = "";
         }
         return value;
+    }
+
+    public static String extractInformationFromServer(String jsonMessage){
+        List<String> values = extractInformation(jsonMessage);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String value : values) {
+            stringBuilder.append(isError(value)).append(" ");
+        }
+        return stringBuilder.toString();
     }
 }

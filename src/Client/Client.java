@@ -41,7 +41,7 @@ public class Client {
                     writer.println("PONG");
                     System.out.println("Heartbeat Test Successful");
                 } else {
-                    System.out.println("From Server: " + JsonMessageExtractor.extractInformation(received));
+                    System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
                 }
             }
         } catch (IOException e) {

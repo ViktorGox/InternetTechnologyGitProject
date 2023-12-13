@@ -13,7 +13,6 @@ import java.util.Random;
 public class Server {
     private final ServerSocket serverSocket;
     private final Map<String, ServerSideClient> clients = new HashMap<>();
-
     public static void main(String[] args) {
         new Server().start();
     }
@@ -42,14 +41,17 @@ public class Server {
             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            ServerSideClient newServerSideClient = new ServerSideClient(writer, reader);
-            Random random = new Random();
-            clients.put(String.valueOf(random.nextInt(0,10)), newServerSideClient);
+            ServerSideClient newServerSideClient = new ServerSideClient(writer, reader, this);
 
             Thread newClientThread = new Thread(newServerSideClient);
             newClientThread.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void addClient(ServerSideClient serverSideClient) {
+        clients.put(serverSideClient.getUsername(), serverSideClient);
+        System.out.println(clients);
     }
 }

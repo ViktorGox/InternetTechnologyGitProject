@@ -28,10 +28,10 @@ public class JsonMessageExtractor {
                     }
                 });
             } catch (Exception e) {
-                System.out.println("Error parsing JSON: " + e.getMessage());
+                throw new JsonExtractorError("Error parsing JSON: " + e.getMessage());
             }
         } else {
-            System.out.println("Invalid JSON message format");
+            throw new IllegalArgumentException("Invalid JSON format.");
         }
         return values;
     }

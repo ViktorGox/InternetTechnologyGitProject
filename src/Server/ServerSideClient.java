@@ -5,19 +5,19 @@ import Messages.JsonMessageExtractor;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashMap;
 import java.util.Map;
 
 public class ServerSideClient implements Runnable {
+    public static final int NAME_MAX_LENGTH = 14;
+    public static final int NAME_MIN_LENGTH = 3;
     private PrintWriter writer;
     private BufferedReader reader;
     private String username;
-    private Server relatedServer;
+    private boolean isLoggedIn;
 
-    public ServerSideClient(PrintWriter writer, BufferedReader reader, Server relatedServer) {
+    public ServerSideClient(PrintWriter writer, BufferedReader reader) {
         this.writer = writer;
         this.reader = reader;
-        this.relatedServer = relatedServer;
     }
 
     @Override
@@ -56,7 +56,6 @@ public class ServerSideClient implements Runnable {
 
     private void commandLogIn(Map<String, String> message) {
         this.username = message.get("username");
-        relatedServer.addClient(this);
     }
 
     private void commandBroadcastReq(Map<String, String> message) {
@@ -86,10 +85,8 @@ public class ServerSideClient implements Runnable {
 
     }
 
-
-
     public boolean isLoggedIn(){
-        return username != null;
+        return isLoggedIn;
     }
 
     public String getUsername() {

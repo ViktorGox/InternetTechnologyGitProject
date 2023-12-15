@@ -6,13 +6,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class Server {
     private final ServerSocket serverSocket;
-    private final Map<String, ServerSideClient> clients = new HashMap<>();
+    private final HashSet<ServerSideClient> clients = new HashSet<>();
     public static void main(String[] args) {
         new Server().start();
     }
@@ -41,7 +39,8 @@ public class Server {
             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            ServerSideClient newServerSideClient = new ServerSideClient(writer, reader, this);
+            ServerSideClient newServerSideClient = new ServerSideClient(writer, reader);
+            addClient(newServerSideClient);
 
             Thread newClientThread = new Thread(newServerSideClient);
             newClientThread.start();
@@ -50,8 +49,9 @@ public class Server {
         }
     }
 
-    public void addClient(ServerSideClient serverSideClient) {
-        clients.put(serverSideClient.getUsername(), serverSideClient);
+    public synchronized void addClient(ServerSideClient serverSideClient) {
+        clients.add(serverSideClient);
         System.out.println(clients);
+        System.out.println(clients.size());
     }
 }

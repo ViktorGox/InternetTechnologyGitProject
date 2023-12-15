@@ -11,6 +11,8 @@ import java.util.*;
 public class Server {
     private final ServerSocket serverSocket;
     private final HashSet<ServerSideClient> clients = new HashSet<>();
+    private boolean isGameCreated = false;
+
     public static void main(String[] args) {
         new Server().start();
     }
@@ -53,5 +55,13 @@ public class Server {
         clients.add(serverSideClient);
         System.out.println(clients);
         System.out.println(clients.size());
+    }
+
+    public boolean isGameCreated() {
+        return isGameCreated;
+    }
+
+    public void setGameCreated(boolean gameCreated) {
+        isGameCreated = gameCreated;
     }
 }

@@ -2,7 +2,7 @@ package Messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class MessageError {
+public class MessageError extends JsonMessage{
     @JsonProperty
     private String code;
 

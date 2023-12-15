@@ -12,5 +12,4 @@ public class MessageLogin extends JsonMessage{
         this.username = username;
     }
 
-
 }

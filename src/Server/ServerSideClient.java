@@ -1,6 +1,10 @@
 package Server;
 
+import Messages.JsonMessage;
 import Messages.JsonMessageExtractor;
+import Messages.MessageError;
+import Messages.MessageGoodStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,6 +18,8 @@ public class ServerSideClient implements Runnable {
     private BufferedReader reader;
     private String username;
     private boolean isLoggedIn;
+    private Server relatedServer;
+    private boolean hasJoinedGame = false;
 
     public ServerSideClient(PrintWriter writer, BufferedReader reader) {
         this.writer = writer;
@@ -44,12 +50,12 @@ public class ServerSideClient implements Runnable {
         Map<String, String> message = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
         switch (clientCommand.getCommand()) {
             case "LOGIN" -> commandLogIn(message);
-            case "BROADCAST_REQ"-> commandBroadcastReq(message);
-            case "PRIVATE_SEND"-> commandPrivateSend(message);
-            case "GG_CREATE"-> commandGGCreate(message);
-            case "GG_JOIN"-> commandGGJoin(message);
-            case "GG_LEAVE"-> commandGGLeave(message);
-            case "BYE"-> commandBye();
+            case "BROADCAST_REQ" -> commandBroadcastReq(message);
+            case "PRIVATE_SEND" -> commandPrivateSend(message);
+            case "GG_CREATE" -> commandGGCreate(message);
+            case "GG_JOIN" -> commandGGJoin(message);
+            case "GG_LEAVE" -> commandGGLeave(message);
+            case "BYE" -> commandBye();
             default -> commandError();
         }
     }
@@ -66,11 +72,36 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandGGCreate(Map<String, String> message) {
-
+        String resp = "GG_CREATE_RESP";
+        JsonMessage messageToSend;
+        if (relatedServer.isGameCreated()) {
+            messageToSend = new MessageError("8001");
+        } else {
+            messageToSend = new MessageGoodStatus();
+            relatedServer.setGameCreated(true);
+        }
+        try {
+            writer.println(resp + messageToSend.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void commandGGJoin(Map<String, String> message) {
-
+        String resp = "GG_JOIN_RESP";
+        JsonMessage messageToSend;
+        if (!relatedServer.isGameCreated()) {
+            messageToSend = new MessageError("8002");
+        } else if(hasJoinedGame){
+            messageToSend = new MessageError("8003");
+        } else {
+            messageToSend = new MessageGoodStatus();
+        }
+        try {
+            writer.println(resp + messageToSend.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void commandGGLeave(Map<String, String> message) {

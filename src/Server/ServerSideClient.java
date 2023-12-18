@@ -1,9 +1,6 @@
 package Server;
 
-import Messages.JsonMessage;
-import Messages.JsonMessageExtractor;
-import Messages.MessageError;
-import Messages.MessageGoodStatus;
+import Messages.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -15,8 +12,8 @@ import java.util.Map;
 
 public class ServerSideClient implements Runnable {
     public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
-    private PrintWriter writer;
-    private BufferedReader reader;
+    private final PrintWriter writer;
+    private final BufferedReader reader;
     private String username;
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
@@ -33,9 +30,9 @@ public class ServerSideClient implements Runnable {
         String inputLine;
         try {
             while ((inputLine = reader.readLine()) != null) {
+                System.out.println("Received from client: " + inputLine);
                 ClientCommand command = SplitInput(inputLine);
                 DetermineAction(command);
-                System.out.println("Received from client: " + inputLine);
             }
         } catch (IOException ignored) {
         } finally {
@@ -93,7 +90,21 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandBroadcastReq(Map<String, String> message) {
+        String messageS = message.get("message");
+        String responseCommand = "BROADCAST_RESP";
 
+        JsonMessage finalMessage;
+
+        if(!isLoggedIn) {
+            finalMessage = new MessageError("6000");
+            sendToClient(responseCommand, finalMessage);
+        } else {
+            finalMessage = new MessageGoodStatus();
+            sendToClient(responseCommand, finalMessage);
+
+            JsonMessage messageToBroadcast = new MessageBroadcast(username, messageS);
+            Server.getInstance().broadcastAllIgnoreSender("BROADCAST", messageToBroadcast, this.username);
+        }
     }
 
     private void commandPrivateSend(Map<String, String> message) {
@@ -145,16 +156,13 @@ public class ServerSideClient implements Runnable {
 
     }
 
-    public boolean isLoggedIn() {
-        return isLoggedIn;
-    }
-
     public String getUsername() {
         return username;
     }
 
-    private void sendToClient(String code, JsonMessage message) {
+    public void sendToClient(String code, JsonMessage message) {
         try {
+            System.out.println("Sending to client: " + code + " " + message.mapToJson());
             writer.println(code + message.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

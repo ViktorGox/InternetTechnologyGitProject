@@ -1,5 +1,7 @@
 package Server;
 
+import Messages.JsonMessage;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -91,5 +93,21 @@ public class Server {
             }
         }
         return false;
+    }
+
+    public void broadcastAllIgnoreSender(String code, JsonMessage message, String sender) {
+        broadcastAll(code, message, sender);
+    }
+
+    public void broadcastAll(String code, JsonMessage message) {
+        broadcastAll(code, message, "");
+    }
+    public void broadcastAll(String code, JsonMessage message, String username) {
+        for (ServerSideClient client : clients) {
+            if(client.getUsername().equals(username)) {
+                continue;
+            }
+            client.sendToClient(code, message);
+        }
     }
 }

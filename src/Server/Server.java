@@ -102,7 +102,8 @@ public class Server {
     public void broadcastAll(String code, JsonMessage message) {
         broadcastAll(code, message, "");
     }
-    public void broadcastAll(String code, JsonMessage message, String username) {
+
+    private void broadcastAll(String code, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
             if(client.getUsername().equals(username)) {
                 continue;

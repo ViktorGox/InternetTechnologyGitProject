@@ -27,6 +27,7 @@ public class Client {
             startUserInput(writer);
 
         } catch (IOException e) {
+            System.err.println("Failed to connect to server.");
             throw new RuntimeException(e);
         }
     }
@@ -45,6 +46,7 @@ public class Client {
                 }
             }
         } catch (IOException e) {
+            System.err.println("Lost connection with server.");
             throw new RuntimeException(e);
         } finally {
             closeStreams();

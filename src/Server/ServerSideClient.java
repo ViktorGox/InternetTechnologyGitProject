@@ -8,22 +8,24 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Map;
 
 public class ServerSideClient implements Runnable {
-    public static final int NAME_MAX_LENGTH = 14;
-    public static final int NAME_MIN_LENGTH = 3;
+    public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
     private PrintWriter writer;
     private BufferedReader reader;
     private String username;
     private boolean isLoggedIn;
-    private Server relatedServer;
     private boolean hasJoinedGame = false;
+    private final Socket socket;
 
-    public ServerSideClient(PrintWriter writer, BufferedReader reader) {
-        this.writer = writer;
-        this.reader = reader;
+    public ServerSideClient(Socket socket) throws IOException {
+        this.socket = socket;
+        this.writer = new PrintWriter(socket.getOutputStream(), true);
+        this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
     @Override
@@ -34,8 +36,18 @@ public class ServerSideClient implements Runnable {
                 ClientCommand command = SplitInput(inputLine);
                 DetermineAction(command);
                 System.out.println("Received from client: " + inputLine);
-                writer.println("Server: Message received - " + inputLine);
             }
+        } catch (IOException ignored) {
+        } finally {
+            closeSocket();
+        }
+    }
+
+    // TODO: ask Gerralt: Does it matter if we close the socket or writer/reader?
+    private void closeSocket() {
+        try {
+            Server.getInstance().removeClient(this);
+            socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -61,12 +73,29 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandLogIn(Map<String, String> message) {
-        this.username = message.get("username");
+        String username = message.get("username");
+        String responseCommand = "LOGIN_RESP";
+
+        JsonMessage finalMessage;
+        if (isLoggedIn) {
+            finalMessage = new MessageError("5000");
+        } else if (!username.matches(VALID_USERNAME_REGEX)) {
+            finalMessage = new MessageError("5001");
+        } else if (Server.getInstance().containsUser(username)) {
+            finalMessage = new MessageError("5002");
+        } else {
+            finalMessage = new MessageGoodStatus();
+            isLoggedIn = true;
+            this.username = username;
+        }
+
+        sendToClient(responseCommand, finalMessage);
     }
 
     private void commandBroadcastReq(Map<String, String> message) {
 
     }
+
     private void commandPrivateSend(Map<String, String> message) {
 
     }
@@ -74,11 +103,11 @@ public class ServerSideClient implements Runnable {
     private void commandGGCreate(Map<String, String> message) {
         String resp = "GG_CREATE_RESP";
         JsonMessage messageToSend;
-        if (relatedServer.isGameCreated()) {
+        if (Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8001");
         } else {
             messageToSend = new MessageGoodStatus();
-            relatedServer.setGameCreated(true);
+            Server.getInstance().setGameCreated(true);
         }
         try {
             writer.println(resp + messageToSend.mapToJson());
@@ -90,9 +119,9 @@ public class ServerSideClient implements Runnable {
     private void commandGGJoin(Map<String, String> message) {
         String resp = "GG_JOIN_RESP";
         JsonMessage messageToSend;
-        if (!relatedServer.isGameCreated()) {
+        if (!Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8002");
-        } else if(hasJoinedGame){
+        } else if (hasJoinedGame) {
             messageToSend = new MessageError("8003");
         } else {
             messageToSend = new MessageGoodStatus();
@@ -116,12 +145,20 @@ public class ServerSideClient implements Runnable {
 
     }
 
-    public boolean isLoggedIn(){
+    public boolean isLoggedIn() {
         return isLoggedIn;
     }
 
     public String getUsername() {
         return username;
+    }
+
+    private void sendToClient(String code, JsonMessage message) {
+        try {
+            writer.println(code + message.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -131,5 +168,11 @@ public class ServerSideClient implements Runnable {
                 ", reader=" + reader +
                 ", username='" + username + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ServerSideClient transferred)) return false;
+        return username.equals(transferred.username);
     }
 }

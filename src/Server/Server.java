@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
+import java.util.Set;
 
 public class Server {
     private static Server instance;
@@ -108,6 +109,12 @@ public class Server {
             if(client.getUsername().equals(username)) {
                 continue;
             }
+            client.sendToClient(code, message);
+        }
+    }
+
+    public void broadcastTo(String code, JsonMessage message, Set<ServerSideClient> receivers) {
+        for (ServerSideClient client : receivers) {
             client.sendToClient(code, message);
         }
     }

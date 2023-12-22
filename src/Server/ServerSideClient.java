@@ -18,6 +18,7 @@ public class ServerSideClient implements Runnable {
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
     private final Socket socket;
+    GuessGame game;
 
     public ServerSideClient(Socket socket) throws IOException {
         this.socket = socket;
@@ -63,6 +64,7 @@ public class ServerSideClient implements Runnable {
             case "PRIVATE_SEND" -> commandPrivateSend(message);
             case "GG_CREATE" -> commandGGCreate(message);
             case "GG_JOIN" -> commandGGJoin(message);
+            case "GG_GUESS" -> commandGG_Guess(message);
             case "GG_LEAVE" -> commandGGLeave(message);
             case "BYE" -> commandBye();
             default -> commandError();
@@ -95,7 +97,7 @@ public class ServerSideClient implements Runnable {
 
         JsonMessage finalMessage;
 
-        if(!isLoggedIn) {
+        if (!isLoggedIn) {
             finalMessage = new MessageError("6000");
             sendToClient(responseCommand, finalMessage);
         } else {
@@ -112,7 +114,7 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandGGCreate(Map<String, String> message) {
-        String resp = "GG_CREATE_RESP";
+        String code = "GG_CREATE_RESP";
         JsonMessage messageToSend;
         if (Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8001");
@@ -120,15 +122,15 @@ public class ServerSideClient implements Runnable {
             messageToSend = new MessageGoodStatus();
             Server.getInstance().setGameCreated(true);
         }
-        try {
-            writer.println(resp + messageToSend.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+            sendToClient(code, messageToSend);
+            Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", null, this.username);
+            game = new GuessGame(this);
+            game.start();
+
     }
 
     private void commandGGJoin(Map<String, String> message) {
-        String resp = "GG_JOIN_RESP";
+        String code = "GG_JOIN_RESP";
         JsonMessage messageToSend;
         if (!Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8002");
@@ -137,50 +139,63 @@ public class ServerSideClient implements Runnable {
         } else {
             messageToSend = new MessageGoodStatus();
         }
+            sendToClient(code, messageToSend);
+            game.addGamer(this);
+    }
+
+    private void commandGG_Guess(Map<String, String> message) {
+        String code = "GG_GUESS_RESP";
+        JsonMessage messageToSend;
         try {
-            writer.println(resp + messageToSend.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            int guess = Integer.parseInt(message.get("guess"));
+            if (guess < 1 || guess > 50) {
+                messageToSend = new MessageError("8006");
+            } else {
+                messageToSend = new MessageGuess(game.compareNumber(guess, this));
+            }
+        } catch (NumberFormatException e){
+            messageToSend = new MessageError("8005");
         }
+        sendToClient(code, messageToSend);
     }
 
     private void commandGGLeave(Map<String, String> message) {
 
     }
 
-    private void commandBye() {
+        private void commandBye () {
 
-    }
+        }
 
-    private void commandError() {
+        private void commandError () {
 
-    }
+        }
 
-    public String getUsername() {
-        return username;
-    }
+        public String getUsername () {
+            return username;
+        }
 
-    public void sendToClient(String code, JsonMessage message) {
-        try {
-            System.out.println("Sending to client: " + code + " " + message.mapToJson());
-            writer.println(code + message.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        public void sendToClient (String code, JsonMessage message){
+            try {
+                System.out.println("Sending to client: " + code + " " + message.mapToJson());
+                writer.println(code + message.mapToJson());
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public String toString () {
+            return "ServerSideClient{" +
+                    "writer=" + writer +
+                    ", reader=" + reader +
+                    ", username='" + username + '\'' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals (Object obj){
+            if (!(obj instanceof ServerSideClient transferred)) return false;
+            return username.equals(transferred.username);
         }
     }
-
-    @Override
-    public String toString() {
-        return "ServerSideClient{" +
-                "writer=" + writer +
-                ", reader=" + reader +
-                ", username='" + username + '\'' +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof ServerSideClient transferred)) return false;
-        return username.equals(transferred.username);
-    }
-}

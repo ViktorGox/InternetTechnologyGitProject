@@ -19,7 +19,7 @@ public class Server {
     }
 
     private final ServerSocket serverSocket;
-    private final HashSet<ServerSideClient> clients = new HashSet<>();
+    private final Set<ServerSideClient> clients = new HashSet<>();
     private boolean isGameCreated = false;
 
     public static void main(String[] args) {

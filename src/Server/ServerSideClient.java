@@ -14,6 +14,7 @@ public class ServerSideClient implements Runnable {
     public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
     private final PrintWriter writer;
     private final BufferedReader reader;
+    private PingPongInteraction pingPongInteraction;
     private String username;
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
@@ -42,9 +43,11 @@ public class ServerSideClient implements Runnable {
     }
 
     // TODO: ask Gerralt: Does it matter if we close the socket or writer/reader?
-    private void closeSocket() {
+    protected void closeSocket() {
         try {
             Server.getInstance().removeClient(this);
+            writer.close();
+            reader.close();
             socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -53,11 +56,17 @@ public class ServerSideClient implements Runnable {
 
     public ClientCommand SplitInput(String inputLine) {
         String[] split = inputLine.split(" ", 2);
+        if(split.length == 1) {
+            return new ClientCommand(split[0], null);
+        }
         return new ClientCommand(split[0], split[1]);
     }
 
     public void DetermineAction(ClientCommand clientCommand) {
-        Map<String, String> message = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
+        Map<String, String> message = null;
+        if(clientCommand.getMessage() != null) {
+            message = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
+        }
         switch (clientCommand.getCommand()) {
             case "LOGIN" -> commandLogIn(message);
             case "BROADCAST_REQ" -> commandBroadcastReq(message);
@@ -67,7 +76,16 @@ public class ServerSideClient implements Runnable {
             case "GG_GUESS" -> commandGG_Guess(message);
             case "GG_LEAVE" -> commandGGLeave(message);
             case "BYE" -> commandBye();
+            case "PONG" -> pong();
             default -> commandError();
+        }
+    }
+
+    private void pong() {
+        System.out.println("Received Pong!");
+        if(pingPongInteraction != null) {
+            System.out.println("Notifying that Pong was received.");
+            pingPongInteraction.receivedPong();
         }
     }
 
@@ -86,6 +104,9 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageGoodStatus();
             isLoggedIn = true;
             this.username = username;
+            pingPongInteraction = new PingPongInteraction(this);
+            Thread pingPongThread = new Thread(pingPongInteraction);
+            pingPongThread.start();
         }
 
         sendToClient(responseCommand, finalMessage);
@@ -122,10 +143,10 @@ public class ServerSideClient implements Runnable {
             messageToSend = new MessageGoodStatus();
             Server.getInstance().setGameCreated(true);
         }
-            sendToClient(code, messageToSend);
-            Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", null, this.username);
-            game = new GuessGame(this);
-            game.start();
+        sendToClient(code, messageToSend);
+        Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", null, this.username);
+        game = new GuessGame(this);
+        game.start();
 
     }
 
@@ -139,8 +160,8 @@ public class ServerSideClient implements Runnable {
         } else {
             messageToSend = new MessageGoodStatus();
         }
-            sendToClient(code, messageToSend);
-            game.addGamer(this);
+        sendToClient(code, messageToSend);
+        game.addGamer(this);
     }
 
     private void commandGG_Guess(Map<String, String> message) {
@@ -153,7 +174,7 @@ public class ServerSideClient implements Runnable {
             } else {
                 messageToSend = new MessageGuess(game.compareNumber(guess, this));
             }
-        } catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
             messageToSend = new MessageError("8005");
         }
         sendToClient(code, messageToSend);
@@ -163,39 +184,46 @@ public class ServerSideClient implements Runnable {
 
     }
 
-        private void commandBye () {
-
-        }
-
-        private void commandError () {
-
-        }
-
-        public String getUsername () {
-            return username;
-        }
-
-        public void sendToClient (String code, JsonMessage message){
-            try {
-                System.out.println("Sending to client: " + code + " " + message.mapToJson());
-                writer.println(code + message.mapToJson());
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public String toString () {
-            return "ServerSideClient{" +
-                    "writer=" + writer +
-                    ", reader=" + reader +
-                    ", username='" + username + '\'' +
-                    '}';
-        }
-
-        @Override
-        public boolean equals (Object obj){
-            if (!(obj instanceof ServerSideClient transferred)) return false;
-            return username.equals(transferred.username);
+    private void commandBye() {
+        if(pingPongInteraction != null) {
+            pingPongInteraction.disconnect();
         }
     }
+
+    private void commandError() {
+
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void sendToClient(String code, JsonMessage message) {
+        try {
+            System.out.println("Sending to client: " + code + " " + message.mapToJson());
+            writer.println(code + message.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendToClient(String code) {
+        System.out.println("Sending to client: " + code);
+        writer.println(code);
+    }
+
+    @Override
+    public String toString() {
+        return "ServerSideClient{" +
+                "writer=" + writer +
+                ", reader=" + reader +
+                ", username='" + username + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ServerSideClient transferred)) return false;
+        return username.equals(transferred.username);
+    }
+}

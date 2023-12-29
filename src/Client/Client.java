@@ -39,7 +39,9 @@ public class Client {
                 String received = reader.readLine();
                 if(received == null) return;
                 if(received.equals("PING")){
+                    // COMMENT THIS TO TEST FAILED TO RESPONSE TO PING
                     writer.println("PONG");
+                    // ABOVE
                     System.out.println("Heartbeat Test Successful");
                 } else {
                     System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));

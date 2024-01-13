@@ -113,6 +113,14 @@ public class ServerSideClient implements Runnable {
             this.sendToClient("FILE_TRF_RESP", new MessageError("3001"));
             return;
         }
+        if (!isLoggedIn) {
+            this.sendToClient("FILE_TRF_RESP", new MessageError("3000"));
+            return;
+        }
+        if(receiverClient.username.equals(username)) {
+            this.sendToClient("FILE_TRF_RESP", new MessageError("3003"));
+            return;
+        }
 
         MessageFileTransfer mft = new MessageFileTransfer(username, fileName);
 

@@ -1,15 +1,13 @@
 package Client;
 
-import Messages.MessageBroadcast;
-import Messages.MessageFileTransfer;
-import Messages.MessageFileTrfAnswer;
-import Messages.MessageLogin;
+import Messages.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Scanner;
 
 public class UserInput implements Runnable {
@@ -30,6 +28,8 @@ public class UserInput implements Runnable {
             ?: This menu
             Q: Quit
             """;
+
+    private String fileTransferReceiver;
 
     public UserInput(PrintWriter writer, BufferedReader reader) {
         this.writer = writer;
@@ -87,7 +87,9 @@ public class UserInput implements Runnable {
     }
 
     public void fileTransfer() {
-        MessageFileTransfer messageFileTransfer = new MessageFileTransfer("12345", "Some ass file name");
+        System.out.println("Receiver username: ");
+        String receiver = inputScanner.nextLine();
+        MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, "Some ass file name");
         try {
             writer.println("FILE_TRF " + messageFileTransfer.mapToJson());
         } catch (JsonProcessingException e) {
@@ -108,26 +110,33 @@ public class UserInput implements Runnable {
         }
     }
 
-    protected void handleFireTransfer() {
+    protected void handleFireTransfer(String received) {
         System.out.println("""
                 A -> Accept
                 R -> Reject
                 """);
+        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
+        if(map.get("username") == null) {
+            throw new IllegalStateException("??? How did you receive this without having username in received???");
+        }
+
+        fileTransferReceiver = map.get("username");
     }
 
     private void handleFileTransferAnswer(String input) {
-        System.out.println("Handling file transfer answer.");
+//        System.out.println("Handling file transfer answer.");
+//        System.out.println("Line -> " + fileTransferReceiver);
         switch (input.toUpperCase()) {
-            case "A" -> answerFileTransfer("123", true);
-            case "R" -> answerFileTransfer("123", false);
+            case "A" -> answerFileTransfer(fileTransferReceiver, true);
+            case "R" -> answerFileTransfer(fileTransferReceiver, false);
         }
     }
 
     public void answerFileTransfer(String sender, boolean answer) {
         try {
-            System.out.println("Sending to server that I " + answer + " the question.");
+//            System.out.println("Sending to server that I " + answer + " the question.");
             MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(sender, String.valueOf(answer));
-            System.out.println("UserInput/answerFileTransfer -> Sending to server: " + mfta.mapToJson());
+//            System.out.println("UserInput/answerFileTransfer -> Sending to server: " + mfta.mapToJson());
             writer.println("FILE_TRF_ANSWER " + mfta.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

@@ -37,10 +37,10 @@ public class Client implements OnClientExited {
         try {
             while (keepListening) {
                 String received = userInput.reader.readLine();
-                System.out.println(received);
                 if (received == null) return;
                 if (received.equals("PING")) handlePingPong();
-                else if (received.contains("FILE_TRF") && !received.contains("ANSWER")) userInput.handleFireTransfer();
+                else if (received.contains("FILE_TRF") && !received.contains("ANSWER") && !received.contains("code"))
+                    userInput.handleFireTransfer(received);
                 else System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
             }
         } catch (IOException e) {

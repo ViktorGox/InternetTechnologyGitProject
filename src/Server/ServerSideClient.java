@@ -19,6 +19,7 @@ public class ServerSideClient implements Runnable {
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
     private final Socket socket;
+    private boolean pingPong = false;
     GuessGame game;
 
     public ServerSideClient(Socket socket) throws IOException {
@@ -42,7 +43,6 @@ public class ServerSideClient implements Runnable {
         }
     }
 
-    // TODO: ask Gerralt: Does it matter if we close the socket or writer/reader?
     protected void closeSocket() {
         try {
             Server.getInstance().removeClient(this);
@@ -56,7 +56,7 @@ public class ServerSideClient implements Runnable {
 
     public ClientCommand SplitInput(String inputLine) {
         String[] split = inputLine.split(" ", 2);
-        if(split.length == 1) {
+        if (split.length == 1) {
             return new ClientCommand(split[0], null);
         }
         return new ClientCommand(split[0], split[1]);
@@ -64,7 +64,7 @@ public class ServerSideClient implements Runnable {
 
     public void DetermineAction(ClientCommand clientCommand) {
         Map<String, String> message = null;
-        if(clientCommand.getMessage() != null) {
+        if (clientCommand.getMessage() != null) {
             message = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
         }
         switch (clientCommand.getCommand()) {
@@ -75,15 +75,53 @@ public class ServerSideClient implements Runnable {
             case "GG_JOIN" -> commandGGJoin(message);
             case "GG_GUESS" -> commandGG_Guess(message);
             case "GG_LEAVE" -> commandGGLeave(message);
+            case "FILE_TRF" -> commandFileTransfer(message);
+            case "FILE_TRF_ANSWER" -> commandFileTransferAnswer(message);
             case "BYE" -> commandBye();
             case "PONG" -> pong();
             default -> commandError();
         }
     }
 
+    private void commandFileTransferAnswer(Map<String, String> message) {
+        message.forEach((key, data) -> {
+            System.out.println(key + " / " + data);
+        });
+        String answer = message.get("answer");
+        String sender = message.get("username");
+        System.out.println("ServerSideClient/commandFileTransferAnswer -> answer: " + answer + ", username: " + sender);
+
+
+        ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
+        if(senderReceiver == null) {
+            this.sendToClient("FILE_TRF_ANSWER", new MessageError("??????"));
+            return;
+        }
+
+        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username,  String.valueOf(answer));
+
+        senderReceiver.sendToClient("FILE_TRF_ANSWER", mfta);
+    }
+
+    private void commandFileTransfer(Map<String, String> message) {
+        String receiver = message.get("username");
+        String fileName = message.get("fileName");
+        System.out.println(receiver + " " + fileName);
+
+        ServerSideClient receiverClient = Server.getInstance().getUser(receiver);
+        if(receiverClient == null) {
+            this.sendToClient("FILE_TRF_RESP", new MessageError("3001"));
+            return;
+        }
+
+        MessageFileTransfer mft = new MessageFileTransfer(username, fileName);
+
+        receiverClient.sendToClient("FILE_TRF", mft);
+    }
+
     private void pong() {
         System.out.println("Received Pong!");
-        if(pingPongInteraction != null) {
+        if (pingPongInteraction != null) {
             System.out.println("Notifying that Pong was received.");
             pingPongInteraction.receivedPong();
         }
@@ -98,15 +136,17 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageError("5000");
         } else if (!username.matches(VALID_USERNAME_REGEX)) {
             finalMessage = new MessageError("5001");
-        } else if (Server.getInstance().containsUser(username)) {
+        } else if (Server.getInstance().getUser(username) != null) {
             finalMessage = new MessageError("5002");
         } else {
             finalMessage = new MessageGoodStatus();
             isLoggedIn = true;
             this.username = username;
-            pingPongInteraction = new PingPongInteraction(this);
-            Thread pingPongThread = new Thread(pingPongInteraction);
-            pingPongThread.start();
+            if(pingPong) {
+                pingPongInteraction = new PingPongInteraction(this);
+                Thread pingPongThread = new Thread(pingPongInteraction);
+                pingPongThread.start();
+            }
         }
 
         sendToClient(responseCommand, finalMessage);
@@ -185,7 +225,7 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandBye() {
-        if(pingPongInteraction != null) {
+        if (pingPongInteraction != null) {
             pingPongInteraction.disconnect();
         }
     }

@@ -1,16 +1,17 @@
 package Client;
 
 import Messages.JsonMessageExtractor;
+import Messages.MessageFileTrfAnswer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
-public class Client {
-    private final PrintWriter writer;
-    private final BufferedReader reader;
+public class Client implements OnClientExited {
+    private UserInput userInput;
     private boolean keepListening = true;
 
     public static void main(String[] args) {
@@ -21,11 +22,11 @@ public class Client {
         try {
             Socket clientSocket = new Socket("127.0.0.1", 1337);
 
-            writer = new PrintWriter(clientSocket.getOutputStream(), true);
-            reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            startUserInput(writer);
-
+            startUserInput(writer, reader);
+            userInput.addListener(this);
         } catch (IOException e) {
             System.err.println("Failed to connect to server.");
             throw new RuntimeException(e);
@@ -35,41 +36,34 @@ public class Client {
     public void start() {
         try {
             while (keepListening) {
-                // Gets stuck here on exit. Waits for a response from the server but one will never come if the userInput is closed.
-                String received = reader.readLine();
-                if(received == null) return;
-                if(received.equals("PING")){
-                    // COMMENT THIS TO TEST FAILED TO RESPONSE TO PING
-                    writer.println("PONG");
-                    // ABOVE
-                    System.out.println("Heartbeat Test Successful");
-                } else {
-                    System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
-                }
+                String received = userInput.reader.readLine();
+                System.out.println(received);
+                if (received == null) return;
+                if (received.equals("PING")) handlePingPong();
+                else if (received.contains("FILE_TRF") && !received.contains("ANSWER")) userInput.handleFireTransfer();
+                else System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
             }
         } catch (IOException e) {
             System.err.println("Lost connection with server.");
             throw new RuntimeException(e);
         } finally {
-            closeStreams();
+            userInput.closeStreams();
         }
     }
-
-    private void closeStreams() {
-        try {
-            writer.close();
-            reader.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private void handlePingPong() {
+        userInput.writer.println("PONG");
+        System.out.println("Heartbeat Test Successful");
     }
 
-    private void startUserInput(PrintWriter writer) {
-        Thread userInput = new Thread(new UserInput(writer, this));
-        userInput.start();
+    private void startUserInput(PrintWriter writer, BufferedReader reader) {
+        UserInput userInput = new UserInput(writer, reader);
+        this.userInput = userInput;
+        Thread thread = new Thread(userInput);
+        thread.start();
     }
 
-    public void closeInputFromServer() {
+    @Override
+    public void onClientExited() {
         keepListening = false;
     }
 }

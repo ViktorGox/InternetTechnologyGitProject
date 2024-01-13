@@ -25,11 +25,11 @@ public class PingPongInteraction implements Runnable {
                 throw new RuntimeException(e);
             }
             if(!responded) {
-//                System.out.println("Did not receive an answer. Closing connection.");
+                System.out.println("Did not receive an answer. Closing connection.");
                 client.closeSocket();
                 return;
             }
-//            System.out.println("Receive an answer. Repeating.");
+            System.out.println("Receive an answer. Repeating.");
         }
     }
 

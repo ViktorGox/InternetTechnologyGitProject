@@ -86,14 +86,14 @@ public class Server {
         isGameCreated = gameCreated;
     }
 
-    public boolean containsUser(String username) {
+    public ServerSideClient getUser(String username) {
         for (ServerSideClient serverSideClient : clients) {
             if (serverSideClient.getUsername() == null) continue;
             if (serverSideClient.getUsername().equals(username)) {
-                return true;
+                return serverSideClient;
             }
         }
-        return false;
+        return null;
     }
 
     public void broadcastAllIgnoreSender(String code, JsonMessage message, String sender) {

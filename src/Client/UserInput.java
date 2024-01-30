@@ -3,6 +3,7 @@ package Client;
 import Messages.*;
 import Messages.Broadcast.MessageBroadcast;
 import Messages.Broadcast.MessageBroadcastRequest;
+import Messages.PrivateMessage.PrivateSendMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -55,11 +56,8 @@ public class UserInput implements Runnable {
                 case "3" -> privateMessage();
                 case "4" -> logout();
                 case "5" -> fileTransfer();
-                case "6" -> action5();
-                case "3" -> logout();
-                case "4" -> fileTransfer();
-                case "5" -> guessGame();
-                case "6" -> joinGame();
+                case "6" -> guessGame();
+                case "7" -> joinGame();
             }
             if (!terminate) {
                 line = inputScanner.nextLine().toLowerCase();
@@ -112,6 +110,7 @@ public class UserInput implements Runnable {
 
     public void startFileTransferSend(){
         fileTransferSender.start();
+        System.out.println("Client accepted the file transfer");
     }
 
     public void guessGame() {
@@ -139,7 +138,7 @@ public class UserInput implements Runnable {
 //            writer.println("BROADCAST_REQ " + messageBroadcast.mapToJson());
 //        } catch (JsonProcessingException e) {
 //            throw new RuntimeException(e);
-//        }
+        }
     private void joinGame(){
         writer.println("GG_JOIN");
     }
@@ -154,7 +153,16 @@ public class UserInput implements Runnable {
     }
 
     private void privateMessage() {
-
+        System.out.println("Enter receiver:");
+        String receiver = inputScanner.nextLine();
+        System.out.println("Enter your message: ");
+        String message = inputScanner.nextLine();
+        PrivateSendMessage messageBroadcast = new PrivateSendMessage(receiver, message);
+        try {
+            writer.println("PRIVATE_SEND" + messageBroadcast.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void handleFireTransfer(String received) {

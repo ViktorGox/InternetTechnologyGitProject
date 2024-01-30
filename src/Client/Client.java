@@ -1,14 +1,14 @@
 package Client;
 
 import Messages.JsonMessageExtractor;
-import Messages.MessageFileTrfAnswer;
+import Server.ServerSideClient;
+import Shared.ClientCommand;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Scanner;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
@@ -37,26 +37,27 @@ public class Client implements OnClientExited {
     public void start() {
         try {
             while (keepListening) {
-                String received = userInput.reader.readLine();
-                if (received == null) return;
-                if (received.equals("PING")) handlePingPong();
-                else if (received.contains("FILE_TRF") && !received.contains("ANSWER") && !received.contains("code"))
-                    userInput.handleFireTransfer(received);
-                else if (received.equals("GG_CREATE_RESP {\"status\":\"OK\"}"))
-                    setGuessingGame(true);
-                else if (received.contains("FILE_TRF_ANSWER") && received.contains("true")){
-                    userInput.startFileTransferSend();
-                    System.out.println("Client accepted the file transfer");
-            }
-                else System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
+                ClientCommand received = new ClientCommand(userInput.reader.readLine());
+                handleReceived(received);
             }
         } catch (IOException e) {
-            System.err.println("Lost connection with server.");
             throw new RuntimeException(e);
         } finally {
             userInput.closeStreams();
         }
     }
+
+    private void handleReceived(ClientCommand clientCommand) {
+        System.out.println(clientCommand);
+
+        switch (clientCommand.getCommand()) {
+            case "PING" -> handlePingPong();
+            case "FILE_TRF" -> userInput.handleFireTransfer(clientCommand.getMessage());
+            case "GG_CREATE_RESP" -> setGuessingGame(true);
+            case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
+        }
+    }
+
     private void handlePingPong() {
         userInput.writer.println("PONG");
         System.out.println("Heartbeat Test Successful");

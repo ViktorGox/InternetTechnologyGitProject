@@ -2,6 +2,8 @@ package Server;
 
 import Messages.Broadcast.MessageBroadcast;
 import Messages.*;
+import Messages.PrivateMessage.PrivateReceiveMessage;
+import Shared.ClientCommand;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 public class ServerSideClient implements Runnable {
     public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
+    private final boolean PERFORM_PING_PONG = false;
     private final PrintWriter writer;
     private final BufferedReader reader;
     private PingPongInteraction pingPongInteraction;
@@ -21,7 +24,6 @@ public class ServerSideClient implements Runnable {
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
     private final Socket socket;
-    private boolean pingPong = false;
 
 
     public ServerSideClient(Socket socket) throws IOException {
@@ -36,7 +38,7 @@ public class ServerSideClient implements Runnable {
         try {
             while ((inputLine = reader.readLine()) != null) {
                 System.out.println("Received from client: " + inputLine);
-                ClientCommand command = SplitInput(inputLine);
+                ClientCommand command = new ClientCommand(inputLine);
                 DetermineAction(command);
             }
         } catch (IOException ignored) {
@@ -54,14 +56,6 @@ public class ServerSideClient implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public ClientCommand SplitInput(String inputLine) {
-        String[] split = inputLine.split(" ", 2);
-        if (split.length == 1) {
-            return new ClientCommand(split[0], null);
-        }
-        return new ClientCommand(split[0], split[1]);
     }
 
     public void DetermineAction(ClientCommand clientCommand) {
@@ -155,7 +149,7 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageGoodStatus();
             isLoggedIn = true;
             this.username = username;
-            if (pingPong) {
+            if (PERFORM_PING_PONG) {
                 pingPongInteraction = new PingPongInteraction(this);
                 Thread pingPongThread = new Thread(pingPongInteraction);
                 pingPongThread.start();
@@ -181,6 +175,28 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandPrivateSend(Map<String, String> message) {
+        String receiver = message.get("username");
+        String messageS = message.get("message");
+        String responseCommand = "PRIVATE_RESP";
+
+        JsonMessage finalMessage;
+        if (!isLoggedIn) {
+            finalMessage = new MessageError("1000");
+        } else if (messageS.isBlank()) {
+            finalMessage = new MessageError("1001");
+        } else if (Server.getInstance().getUser(receiver) == null) {
+            finalMessage = new MessageError("1002");
+        } else if (this.username.equals(receiver)) {
+            finalMessage = new MessageError("1003");
+        } else {
+            finalMessage = new MessageGoodStatus();
+        }
+        // Handle sender answer.
+        sendToClient(responseCommand, finalMessage);
+
+        // Handle message receiver stage.
+        Server.getInstance().broadcastTo("PRIVATE_RECEIVE", new PrivateReceiveMessage(this.username, messageS)
+                , Server.getInstance().getUser(receiver));
 
     }
 
@@ -251,7 +267,7 @@ public class ServerSideClient implements Runnable {
     public void sendToClient(String code, JsonMessage message) {
         try {
             System.out.println("Sending to client: " + code + " " + message.mapToJson());
-            writer.println(code + message.mapToJson());
+            writer.println(code.toUpperCase() + message.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

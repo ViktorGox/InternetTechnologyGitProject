@@ -122,8 +122,12 @@ public class Server {
 
     public void broadcastTo(String code, JsonMessage message, Set<ServerSideClient> receivers) {
         for (ServerSideClient client : receivers) {
-            client.sendToClient(code, message);
+            broadcastTo(code, message, client);
         }
+    }
+
+    public void broadcastTo(String code, JsonMessage message, ServerSideClient receiver) {
+        receiver.sendToClient(code, message);
     }
 
     public ServerSocket getFileTransferSocket() {

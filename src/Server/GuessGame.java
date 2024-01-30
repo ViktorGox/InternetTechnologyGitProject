@@ -1,6 +1,7 @@
 package Server;
 
 import Messages.JsonMessage;
+import Messages.LeaderboardMessage;
 import Messages.MessageError;
 import Messages.MessageGoodStatus;
 
@@ -18,7 +19,7 @@ public class GuessGame extends Thread {
 
     String error = "GG_GUESS_ERROR";
     String start = "GG_GUESS_START";
-    String resp = "GG_GUESS_RESP";
+    String end = "GG_GUESS_END";
 
 
     public GuessGame(ServerSideClient creator) {
@@ -33,6 +34,7 @@ public class GuessGame extends Thread {
 
     private void startStartTime() {
         startTimer = new Timer();
+        System.out.println("GAME CREATED");
 
         startTimer.schedule(new TimerTask() {
             @Override
@@ -40,19 +42,23 @@ public class GuessGame extends Thread {
                 handleStartCompletion();
                 stopTimer(startTimer);
             }
-        }, 30000);
+        }, 15000);
     }
 
 
     private void handleStartCompletion() {
+        System.out.println("TIMER ENDED");
         JsonMessage jsonMessage;
         if (gamers.size() < 2) {
             jsonMessage = new MessageError("8004");
+            Server.getInstance().setGameCreated(false);
         } else {
             jsonMessage = new MessageGoodStatus();
             generateRandomNumber();
         }
         Server.getInstance().broadcastTo(start, jsonMessage, gamers);
+        System.out.println("GAME HAS STARTED");
+        startGameTimer();
     }
 
     private void startGameTimer() {
@@ -64,18 +70,20 @@ public class GuessGame extends Thread {
                 handleGameCompletion();
                 stopTimer(gameTimer);
             }
-        }, 120000);
+        }, 10);
     }
 
     private void handleGameCompletion() {
         if (gamers.size() != gamerTimes.size()) {
             for (ServerSideClient gamer : gamers) {
                 if (!gamerTimes.containsKey(gamer)) {
-                    //TODO: MARK AS DNF
+                    gamerTimes.put(gamer, 120L);
                 }
             }
         }
-            // TODO: SEND THE LEADERBOARD
+        Map<String, Long> leaderboard = convertToUsernameMap(gamerTimes);
+        JsonMessage jsonMessage = new LeaderboardMessage(leaderboard);
+        Server.getInstance().broadcastTo(end, jsonMessage, gamers);
     }
 
 
@@ -117,6 +125,20 @@ public class GuessGame extends Thread {
             handleGameCompletion();
             stopTimer(gameTimer);
         }
+    }
+
+    private Map<String, Long> convertToUsernameMap(Map<ServerSideClient, Long> originalMap) {
+        Map<String, Long> usernameMap = new HashMap<>();
+
+        for (Map.Entry<ServerSideClient, Long> entry : originalMap.entrySet()) {
+            ServerSideClient serverSideClient = entry.getKey();
+            String username = serverSideClient.getUsername();
+            Long time = entry.getValue();
+
+            usernameMap.put(username, time);
+        }
+
+        return usernameMap;
     }
 
 

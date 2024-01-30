@@ -13,6 +13,7 @@ import java.util.Scanner;
 public class Client implements OnClientExited {
     private UserInput userInput;
     private boolean keepListening = true;
+    private boolean guessingGame = false;
 
     public static void main(String[] args) {
         new Client().start();
@@ -41,6 +42,12 @@ public class Client implements OnClientExited {
                 if (received.equals("PING")) handlePingPong();
                 else if (received.contains("FILE_TRF") && !received.contains("ANSWER") && !received.contains("code"))
                     userInput.handleFireTransfer(received);
+                else if (received.equals("GG_CREATE_RESP {\"status\":\"OK\"}"))
+                    setGuessingGame(true);
+                else if (received.contains("FILE_TRF_ANSWER") && received.contains("true")){
+                    userInput.startFileTransferSend();
+                    System.out.println("Client accepted the file transfer");
+            }
                 else System.out.println("From Server: " + JsonMessageExtractor.extractInformationFromServer(received));
             }
         } catch (IOException e) {
@@ -65,5 +72,13 @@ public class Client implements OnClientExited {
     @Override
     public void onClientExited() {
         keepListening = false;
+    }
+
+    public boolean isGuessingGame() {
+        return guessingGame;
+    }
+
+    public void setGuessingGame(boolean guessingGame) {
+        this.guessingGame = guessingGame;
     }
 }

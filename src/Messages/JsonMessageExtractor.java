@@ -37,6 +37,9 @@ public class JsonMessageExtractor {
     }
 
     private static String isError(String value){
+        if(value == null){
+            return null;
+        }
         if(value.equals("5000")){
             value = "User already logged in";
         } else if (value.equals("5001")) {

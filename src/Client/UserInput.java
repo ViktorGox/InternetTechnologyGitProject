@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -17,6 +19,7 @@ public class UserInput implements Runnable {
     private String username;
     private boolean terminate = false;
     private ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
+    private FileTransferSender fileTransferSender;
     private final String menu = """
             Menu:
 
@@ -24,7 +27,8 @@ public class UserInput implements Runnable {
             2: Broadcast a message
             3: Logout
             4: File Transfer
-            5: Do v
+            5: Create a Guessing Game
+            6: Join a Guessing Game
             ?: This menu
             Q: Quit
             """;
@@ -48,7 +52,8 @@ public class UserInput implements Runnable {
                 case "2" -> broadcastMessage();
                 case "3" -> logout();
                 case "4" -> fileTransfer();
-                case "5" -> action5();
+                case "5" -> guessGame();
+                case "6" -> joinGame();
             }
             if (!terminate) {
                 line = inputScanner.nextLine().toLowerCase();
@@ -92,13 +97,34 @@ public class UserInput implements Runnable {
         MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, "Some ass file name");
         try {
             writer.println("FILE_TRF " + messageFileTransfer.mapToJson());
+            Socket clientSocket = new Socket("127.0.0.1", 1338);
+            fileTransferSender = new FileTransferSender(clientSocket, "C:/Sender/test.txt");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void startFileTransferSend(){
+        fileTransferSender.start();
+    }
+
+    public void guessGame() {
+        writer.println("GG_CREATE");
+    }
+
+    private void makeGuess(){
+        System.out.println("Make a guess between 1 and 50");
+        int guess = Integer.parseInt(inputScanner.nextLine());
+        MessageGuess messageGuess = new MessageGuess(guess);
+        try {
+            writer.println("GG_GUESS " + messageGuess.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void action5() {
-
+    private void joinGame(){
+        writer.println("GG_JOIN");
     }
 
     protected void closeStreams() {
@@ -138,7 +164,12 @@ public class UserInput implements Runnable {
             MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(sender, String.valueOf(answer));
 //            System.out.println("UserInput/answerFileTransfer -> Sending to server: " + mfta.mapToJson());
             writer.println("FILE_TRF_ANSWER " + mfta.mapToJson());
-        } catch (JsonProcessingException e) {
+            if(answer){
+                Socket clientSocket = new Socket("127.0.0.1", 1338);
+                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket);
+                fileTransferReceiver.start();
+            }
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public class ServerSideClient implements Runnable {
     private boolean hasJoinedGame = false;
     private final Socket socket;
     private boolean pingPong = false;
-    GuessGame game;
+
 
     public ServerSideClient(Socket socket) throws IOException {
         this.socket = socket;
@@ -123,8 +124,11 @@ public class ServerSideClient implements Runnable {
         }
 
         MessageFileTransfer mft = new MessageFileTransfer(username, fileName);
+        FIleTransfer fIleTransfer = new FIleTransfer(Server.getInstance().getFileTransferSocket());
+        fIleTransfer.start();
 
         receiverClient.sendToClient("FILE_TRF", mft);
+
     }
 
     private void pong() {
@@ -192,9 +196,9 @@ public class ServerSideClient implements Runnable {
             Server.getInstance().setGameCreated(true);
         }
         sendToClient(code, messageToSend);
-        Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", null, this.username);
-        game = new GuessGame(this);
-        game.start();
+        Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", new MessageInvite(), this.username);
+        Server.guessGame = new GuessGame(this);
+        Server.guessGame.start();
 
     }
 
@@ -209,7 +213,7 @@ public class ServerSideClient implements Runnable {
             messageToSend = new MessageGoodStatus();
         }
         sendToClient(code, messageToSend);
-        game.addGamer(this);
+        Server.guessGame.addGamer(this);
     }
 
     private void commandGG_Guess(Map<String, String> message) {
@@ -220,7 +224,7 @@ public class ServerSideClient implements Runnable {
             if (guess < 1 || guess > 50) {
                 messageToSend = new MessageError("8006");
             } else {
-                messageToSend = new MessageGuess(game.compareNumber(guess, this));
+                messageToSend = new MessageGuess(Server.guessGame.compareNumber(guess, this));
             }
         } catch (NumberFormatException e) {
             messageToSend = new MessageError("8005");

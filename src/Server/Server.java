@@ -19,8 +19,10 @@ public class Server {
     }
 
     private final ServerSocket serverSocket;
+    private final ServerSocket fileTransferSocket;
     private final Set<ServerSideClient> clients = new HashSet<>();
     private boolean isGameCreated = false;
+    public static GuessGame guessGame;
 
     public static void main(String[] args) {
         new Server().start();
@@ -30,6 +32,7 @@ public class Server {
         instance = this;
         try {
             this.serverSocket = new ServerSocket(1337);
+            this.fileTransferSocket = new ServerSocket(1338);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -57,6 +60,10 @@ public class Server {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void handleFileTransferClient(){
+
     }
 
     public synchronized void removeClient(ServerSideClient serverSideClient) {
@@ -117,5 +124,9 @@ public class Server {
         for (ServerSideClient client : receivers) {
             client.sendToClient(code, message);
         }
+    }
+
+    public ServerSocket getFileTransferSocket() {
+        return fileTransferSocket;
     }
 }

@@ -1,5 +1,6 @@
 package Server;
 
+import Messages.Broadcast.MessageBroadcast;
 import Messages.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -93,12 +94,12 @@ public class ServerSideClient implements Runnable {
 
 
         ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
-        if(senderReceiver == null) {
+        if (senderReceiver == null) {
             this.sendToClient("FILE_TRF_ANSWER", new MessageError("??????"));
             return;
         }
 
-        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username,  String.valueOf(answer));
+        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer));
 
         senderReceiver.sendToClient("FILE_TRF_ANSWER", mfta);
     }
@@ -109,7 +110,7 @@ public class ServerSideClient implements Runnable {
         System.out.println(receiver + " " + fileName);
 
         ServerSideClient receiverClient = Server.getInstance().getUser(receiver);
-        if(receiverClient == null) {
+        if (receiverClient == null) {
             this.sendToClient("FILE_TRF_RESP", new MessageError("3001"));
             return;
         }
@@ -117,7 +118,7 @@ public class ServerSideClient implements Runnable {
             this.sendToClient("FILE_TRF_RESP", new MessageError("3000"));
             return;
         }
-        if(receiverClient.username.equals(username)) {
+        if (receiverClient.username.equals(username)) {
             this.sendToClient("FILE_TRF_RESP", new MessageError("3003"));
             return;
         }
@@ -150,7 +151,7 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageGoodStatus();
             isLoggedIn = true;
             this.username = username;
-            if(pingPong) {
+            if (pingPong) {
                 pingPongInteraction = new PingPongInteraction(this);
                 Thread pingPongThread = new Thread(pingPongInteraction);
                 pingPongThread.start();
@@ -164,18 +165,15 @@ public class ServerSideClient implements Runnable {
         String messageS = message.get("message");
         String responseCommand = "BROADCAST_RESP";
 
-        JsonMessage finalMessage;
 
         if (!isLoggedIn) {
-            finalMessage = new MessageError("6000");
-            sendToClient(responseCommand, finalMessage);
-        } else {
-            finalMessage = new MessageGoodStatus();
-            sendToClient(responseCommand, finalMessage);
-
-            JsonMessage messageToBroadcast = new MessageBroadcast(username, messageS);
-            Server.getInstance().broadcastAllIgnoreSender("BROADCAST", messageToBroadcast, this.username);
+            sendToClient(responseCommand, new MessageError("6000"));
+            return;
         }
+        sendToClient(responseCommand, new MessageGoodStatus());
+
+        JsonMessage messageToBroadcast = new MessageBroadcast(this.username, messageS);
+        Server.getInstance().broadcastAllIgnoreSender("BROADCAST", messageToBroadcast, this.username);
     }
 
     private void commandPrivateSend(Map<String, String> message) {

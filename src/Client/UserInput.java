@@ -1,6 +1,8 @@
 package Client;
 
 import Messages.*;
+import Messages.Broadcast.MessageBroadcast;
+import Messages.Broadcast.MessageBroadcastRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -16,15 +18,16 @@ public class UserInput implements Runnable {
     protected final BufferedReader reader;
     private String username;
     private boolean terminate = false;
-    private ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
+    private final ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
     private final String menu = """
             Menu:
 
             1: Log in
             2: Broadcast a message
-            3: Logout
-            4: File Transfer
-            5: Do v
+            3: Send a private message
+            4: Logout
+            5: File Transfer
+            6: Send encrypted message
             ?: This menu
             Q: Quit
             """;
@@ -46,9 +49,10 @@ public class UserInput implements Runnable {
                 case "?" -> System.out.println(menu);
                 case "1" -> logIn();
                 case "2" -> broadcastMessage();
-                case "3" -> logout();
-                case "4" -> fileTransfer();
-                case "5" -> action5();
+                case "3" -> privateMessage();
+                case "4" -> logout();
+                case "5" -> fileTransfer();
+                case "6" -> action5();
             }
             if (!terminate) {
                 line = inputScanner.nextLine().toLowerCase();
@@ -73,9 +77,9 @@ public class UserInput implements Runnable {
     public void broadcastMessage() {
         System.out.println("Enter your message: ");
         String message = inputScanner.nextLine();
-        MessageBroadcast messageBroadcast = new MessageBroadcast(username, message);
+        MessageBroadcastRequest messageBroadcastRequest = new MessageBroadcastRequest(message);
         try {
-            writer.println("BROADCAST_REQ " + messageBroadcast.mapToJson());
+            writer.println("BROADCAST_REQ " + messageBroadcastRequest.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -98,7 +102,16 @@ public class UserInput implements Runnable {
     }
 
     public void action5() {
-
+//        System.out.println("Enter receiver:");
+//        String receiver = inputScanner.nextLine();
+//        System.out.println("Enter your message: ");
+//        String message = inputScanner.nextLine();
+//        MessageBroadcast messageBroadcast = new MessageBroadcast(message);
+//        try {
+//            writer.println("BROADCAST_REQ " + messageBroadcast.mapToJson());
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     protected void closeStreams() {
@@ -108,6 +121,10 @@ public class UserInput implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void privateMessage() {
+
     }
 
     protected void handleFireTransfer(String received) {

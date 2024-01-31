@@ -1,8 +1,7 @@
 package Client;
 
-import Messages.*;
-import Messages.Broadcast.MessageBroadcast;
 import Messages.Broadcast.MessageBroadcastRequest;
+import Messages.*;
 import Messages.PrivateMessage.PrivateSendMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -10,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -28,10 +26,11 @@ public class UserInput implements Runnable {
 
             1: Log in
             2: Broadcast a message
-            3: Logout
+            3: Send private message
             4: File Transfer
             5: Create a Guessing Game
             6: Join a Guessing Game
+            X: Logout
             ?: This menu
             Q: Quit
             """;
@@ -54,10 +53,10 @@ public class UserInput implements Runnable {
                 case "1" -> logIn();
                 case "2" -> broadcastMessage();
                 case "3" -> privateMessage();
-                case "4" -> logout();
-                case "5" -> fileTransfer();
-                case "6" -> guessGame();
-                case "7" -> joinGame();
+                case "4" -> fileTransfer();
+                case "5" -> guessGame();
+                case "6" -> joinGame();
+                case "X" -> logout();
             }
             if (!terminate) {
                 line = inputScanner.nextLine().toLowerCase();
@@ -108,7 +107,7 @@ public class UserInput implements Runnable {
         }
     }
 
-    public void startFileTransferSend(){
+    public void startFileTransferSend() {
         fileTransferSender.start();
         System.out.println("Client accepted the file transfer");
     }
@@ -117,7 +116,7 @@ public class UserInput implements Runnable {
         writer.println("GG_CREATE");
     }
 
-    private void makeGuess(){
+    private void makeGuess() {
         System.out.println("Make a guess between 1 and 50");
         int guess = Integer.parseInt(inputScanner.nextLine());
         MessageGuess messageGuess = new MessageGuess(guess);
@@ -128,18 +127,7 @@ public class UserInput implements Runnable {
         }
     }
 
-    public void action5() {
-//        System.out.println("Enter receiver:");
-//        String receiver = inputScanner.nextLine();
-//        System.out.println("Enter your message: ");
-//        String message = inputScanner.nextLine();
-//        MessageBroadcast messageBroadcast = new MessageBroadcast(message);
-//        try {
-//            writer.println("BROADCAST_REQ " + messageBroadcast.mapToJson());
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException(e);
-        }
-    private void joinGame(){
+    private void joinGame() {
         writer.println("GG_JOIN");
     }
 
@@ -171,7 +159,7 @@ public class UserInput implements Runnable {
                 R -> Reject
                 """);
         Map<String, String> map = JsonMessageExtractor.extractInformation(received);
-        if(map.get("username") == null) {
+        if (map.get("username") == null) {
             throw new IllegalStateException("??? How did you receive this without having username in received???");
         }
 
@@ -193,7 +181,7 @@ public class UserInput implements Runnable {
             MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(sender, String.valueOf(answer));
 //            System.out.println("UserInput/answerFileTransfer -> Sending to server: " + mfta.mapToJson());
             writer.println("FILE_TRF_ANSWER " + mfta.mapToJson());
-            if(answer){
+            if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
                 FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket);
                 fileTransferReceiver.start();

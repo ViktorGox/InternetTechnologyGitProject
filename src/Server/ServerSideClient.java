@@ -190,14 +190,12 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageError("1003");
         } else {
             finalMessage = new MessageGoodStatus();
+
+            Server.getInstance().broadcastTo("PRIVATE_RECEIVE", new PrivateReceiveMessage(this.username, messageS)
+                    , Server.getInstance().getUser(receiver));
         }
         // Handle sender answer.
         sendToClient(responseCommand, finalMessage);
-
-        // Handle message receiver stage.
-        Server.getInstance().broadcastTo("PRIVATE_RECEIVE", new PrivateReceiveMessage(this.username, messageS)
-                , Server.getInstance().getUser(receiver));
-
     }
 
     private void commandGGCreate(Map<String, String> message) {

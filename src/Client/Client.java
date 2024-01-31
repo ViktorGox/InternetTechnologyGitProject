@@ -1,7 +1,5 @@
 package Client;
 
-import Messages.JsonMessageExtractor;
-import Server.ServerSideClient;
 import Shared.ClientCommand;
 
 import java.io.BufferedReader;
@@ -37,8 +35,10 @@ public class Client implements OnClientExited {
     public void start() {
         try {
             while (keepListening) {
-                ClientCommand received = new ClientCommand(userInput.reader.readLine());
-                handleReceived(received);
+                String received = userInput.reader.readLine();
+                if (received == null) continue;
+                ClientCommand clientCommand = new ClientCommand(received);
+                handleReceived(clientCommand);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

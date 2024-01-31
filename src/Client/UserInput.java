@@ -6,6 +6,7 @@ import Messages.PrivateMessage.PrivateSendMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -21,6 +22,7 @@ public class UserInput implements Runnable {
     private boolean terminate = false;
     private ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
     private FileTransferSender fileTransferSender;
+    private String fileName;
     private final String menu = """
             Menu:
 
@@ -97,11 +99,19 @@ public class UserInput implements Runnable {
     public void fileTransfer() {
         System.out.println("Receiver username: ");
         String receiver = inputScanner.nextLine();
-        MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, "Some ass file name");
+        System.out.println("Enter a File name (Example: test.txt):");
+        String fileName = inputScanner.nextLine();
+        File file = new File("FilesToSend/" + fileName);
+        while(!file.exists()){
+            System.out.println("This file is not in FilesToSend folder, Please Try Again");
+            fileName = inputScanner.nextLine();
+            file = new File("FilesToSend/" + fileName);
+        }
+        MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, fileName);
         try {
             writer.println("FILE_TRF " + messageFileTransfer.mapToJson());
             Socket clientSocket = new Socket("127.0.0.1", 1338);
-            fileTransferSender = new FileTransferSender(clientSocket, "C:/Sender/test.txt");
+            fileTransferSender = new FileTransferSender(clientSocket, "FilesToSend/" + fileName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -154,16 +164,20 @@ public class UserInput implements Runnable {
     }
 
     protected void handleFireTransfer(String received) {
+        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
+        String username = map.get("username");
+        if (username == null) {
+            throw new IllegalStateException("??? How did you receive this without having username in received???");
+        }
+        fileName = map.get("fileName");
+        System.out.println(username + " wants to send you a file: " + fileName);
+        System.out.println();
         System.out.println("""
                 A -> Accept
                 R -> Reject
                 """);
-        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
-        if (map.get("username") == null) {
-            throw new IllegalStateException("??? How did you receive this without having username in received???");
-        }
 
-        fileTransferReceiver = map.get("username");
+        fileTransferReceiver = username;
     }
 
     private void handleFileTransferAnswer(String input) {
@@ -183,7 +197,7 @@ public class UserInput implements Runnable {
             writer.println("FILE_TRF_ANSWER " + mfta.mapToJson());
             if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
-                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket);
+                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName);
                 fileTransferReceiver.start();
             }
         } catch (IOException e) {

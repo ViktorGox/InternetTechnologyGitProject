@@ -1,9 +1,10 @@
 package Server;
 
-import Messages.JsonMessage;
-import Messages.LeaderboardMessage;
-import Messages.MessageError;
-import Messages.MessageGoodStatus;
+import Shared.Headers.GuessingGameHeader;
+import Shared.Messages.JsonMessage;
+import Shared.Messages.LeaderboardMessage;
+import Shared.Messages.MessageError;
+import Shared.Messages.MessageGoodStatus;
 
 import java.util.*;
 
@@ -16,11 +17,6 @@ public class GuessGame extends Thread {
     private Timer startTimer;
     private Timer gameTimer;
     private long gameStartTime;
-
-    String error = "GG_GUESS_ERROR";
-    String start = "GG_GUESS_START";
-    String end = "GG_GUESS_END";
-
 
     public GuessGame(ServerSideClient creator) {
         this.creator = creator;
@@ -56,7 +52,7 @@ public class GuessGame extends Thread {
             jsonMessage = new MessageGoodStatus();
             generateRandomNumber();
         }
-        Server.getInstance().broadcastTo(start, jsonMessage, gamers);
+        Server.getInstance().broadcastTo(GuessingGameHeader.GG_GUESS_START, jsonMessage, gamers);
         System.out.println("GAME HAS STARTED");
         startGameTimer();
     }
@@ -83,7 +79,7 @@ public class GuessGame extends Thread {
         }
         Map<String, Long> leaderboard = convertToUsernameMap(gamerTimes);
         JsonMessage jsonMessage = new LeaderboardMessage(leaderboard);
-        Server.getInstance().broadcastTo(end, jsonMessage, gamers);
+        Server.getInstance().broadcastTo(GuessingGameHeader.GG_GUESS_END, jsonMessage, gamers);
     }
 
 

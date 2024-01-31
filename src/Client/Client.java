@@ -1,17 +1,25 @@
 package Client;
 
 import Shared.ClientCommand;
+import Shared.Messages.JsonMessage;
+import Shared.Messages.JsonMessageExtractor;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Map;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
+    private EncryptionHandler encryptionHandler;
     private boolean keepListening = true;
     private boolean guessingGame = false;
+    public static final boolean DISPLAY_RAW_DEBUG = true;
+
+    private Map<String, String> sessionKeys;
 
     public static void main(String[] args) {
         new Client().start();
@@ -48,26 +56,57 @@ public class Client implements OnClientExited {
     }
 
     private void handleReceived(ClientCommand clientCommand) {
-        System.out.println(clientCommand);
+        if (DISPLAY_RAW_DEBUG) System.out.println(clientCommand);
+
+        //TODO: convert to clientCommand.getMessage() to JSON.
 
         switch (clientCommand.getCommand()) {
             case "PING" -> handlePingPong();
             case "FILE_TRF" -> userInput.handleFireTransfer(clientCommand.getMessage());
             case "GG_CREATE_RESP" -> setGuessingGame(true);
             case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
+            case "LOGIN_RESP" -> handleEncryption(clientCommand.getMessage());
+            case "REQ_PUBLIC_KEY" ->
+                    handlePublicKeyRequest(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
         }
+    }
+
+    public void handlePublicKeyRequest(Map<String, String> message) {
+        String sender = message.get("username");
+        System.out.println(encryptionHandler.getPublicKey());
+    }
+
+    private void handleEncryption(String message) {
+        if (!message.contains("OK")) return;
+        encryptionHandler = new EncryptionHandler();
     }
 
     private void handlePingPong() {
         userInput.writer.println("PONG");
-        System.out.println("Heartbeat Test Successful");
+        if (DISPLAY_RAW_DEBUG) System.out.println("Heartbeat Test Successful");
     }
 
     private void startUserInput(PrintWriter writer, BufferedReader reader) {
-        UserInput userInput = new UserInput(writer, reader);
+        UserInput userInput = new UserInput(writer, reader, this);
         this.userInput = userInput;
         Thread thread = new Thread(userInput);
         thread.start();
+    }
+
+    public String getSessionKey(String username) {
+        return sessionKeys.get(username);
+    }
+    @SuppressWarnings("rawtypes")
+    public void send(Enum header, JsonMessage message) {
+        try {
+            userInput.writer.println(header + message.mapToJson());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @SuppressWarnings("rawtypes")
+    public void send(Enum header) {
+        userInput.writer.println(header);
     }
 
     @Override

@@ -1,23 +1,24 @@
 package Shared;
 
 public class ClientCommand {
-    private final String command;
+    @SuppressWarnings("rawtypes")
+    private final Enum header;
     private final String message;
 
     public ClientCommand(String unsplitRawMessage) {
-        // Handle no space present.
         int indexOfJSON = unsplitRawMessage.indexOf("{");
         if(indexOfJSON != -1) {
-            command = unsplitRawMessage.substring(0, indexOfJSON).trim();
+            header = EnumConverter.GroupedEnum.fromString(unsplitRawMessage.substring(0, indexOfJSON).trim());
             message = unsplitRawMessage.substring(indexOfJSON).trim();
             return;
         }
-        command = unsplitRawMessage.trim();
+        header = EnumConverter.GroupedEnum.fromString(unsplitRawMessage.trim());
         message = null;
     }
 
     public String getCommand() {
-        return command;
+        //TODO: FIx
+        return header.toString();
     }
 
     public String getMessage() {
@@ -26,6 +27,6 @@ public class ClientCommand {
 
     @Override
     public String toString() {
-        return command + " " + (message == null ? "" : message);
+        return header + " " + (message == null ? "" : message);
     }
 }

@@ -1,4 +1,4 @@
-package Messages;
+package Shared.Messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -7,4 +7,3 @@ public class MessageInvite extends JsonMessage{
     private String invite = "Invited";
     public MessageInvite() {}
 }
-

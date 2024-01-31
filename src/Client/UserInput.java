@@ -6,6 +6,7 @@ import Shared.Messages.Encryption.MessageEncPrivateSend;
 import Shared.Messages.Encryption.MessageReqPublicKey;
 import Shared.Messages.*;
 import Shared.Messages.PrivateMessage.MessagePrivateSend;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,9 +39,10 @@ public class UserInput implements Runnable {
             1: Log in
             2: Broadcast a message
             3: Send private message
-            4: File Transfer
-            5: Create a Guessing Game
-            6: Join a Guessing Game
+            4: Send encrypted message
+            5: File Transfer
+            6: Create a Guessing Game
+            7: Join a Guessing Game
             X: Logout
             ?: This menu
             Q: Quit

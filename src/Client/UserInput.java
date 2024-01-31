@@ -8,6 +8,7 @@ import Shared.Messages.*;
 import Shared.Messages.PrivateMessage.MessagePrivateSend;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -25,8 +26,12 @@ public class UserInput implements Runnable {
     private final Client client;
     private String username;
     private boolean terminate = false;
+    private volatile boolean response = false;
+    private boolean joinedGame = false;
+    private volatile boolean ggStarted = false;
     private ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
     private FileTransferSender fileTransferSender;
+    private String fileName;
     private final String menu = """
             Menu:
 
@@ -97,11 +102,19 @@ public class UserInput implements Runnable {
     public void fileTransfer() {
         System.out.println("Receiver username: ");
         String receiver = inputScanner.nextLine();
-        MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, "Some ass file name");
+        System.out.println("Enter a File name (Example: test.txt):");
+        String fileName = inputScanner.nextLine();
+        File file = new File("FilesToSend/" + fileName);
+        while(!file.exists()){
+            System.out.println("This file is not in FilesToSend folder, Please Try Again");
+            fileName = inputScanner.nextLine();
+            file = new File("FilesToSend/" + fileName);
+        }
+        MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, fileName);
         try {
             client.send(FileTransferHeader.FILE_TRF, messageFileTransfer);
             Socket clientSocket = new Socket("127.0.0.1", 1338);
-            fileTransferSender = new FileTransferSender(clientSocket, "C:/Sender/test.txt");
+            fileTransferSender = new FileTransferSender(clientSocket, "FilesToSend/" + fileName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -112,19 +125,56 @@ public class UserInput implements Runnable {
         System.out.println("Client accepted the file transfer");
     }
 
-    public void guessGame() {
-        client.send(GuessingGameHeader.GG_CREATE);
+    private void guessGame() {
+        writer.println("GG_CREATE");
+        waitForGameResponse();
+        if(joinedGame) {
+            waitForGameStart();
+            makeGuess();
+        }
+    }
+
+    private void waitForGameStart() {
+        System.out.println("Waiting for the game to start, hang on tight!");
+        while (!ggStarted) {
+            Thread.onSpinWait();
+        }
+        ggStarted = false;
+    }
+
+    private void waitForGameResponse(){
+        while (!response) {
+            Thread.onSpinWait();
+        }
+        response = false;
     }
 
     private void makeGuess() {
-        System.out.println("Make a guess between 1 and 50");
-        int guess = Integer.parseInt(inputScanner.nextLine());
-        MessageGuess messageGuess = new MessageGuess(guess);
-        client.send(GuessingGameHeader.GG_GUESS, messageGuess);
+        while (joinedGame) {
+            System.out.println("If you want to quit enter q");
+            System.out.println("Make a guess between 1 and 50");
+            String input = inputScanner.nextLine().toLowerCase();
+            if (input.equals("q")) {
+                joinedGame = false;
+            } else {
+                MessageGuess messageGuess = new MessageGuess(input);
+                try {
+                    writer.println("GG_GUESS " + messageGuess.mapToJson());
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                waitForGameResponse();
+            }
+        }
     }
 
     private void joinGame() {
         writer.println("GG_JOIN");
+        waitForGameResponse();
+        if(joinedGame) {
+            waitForGameStart();
+            makeGuess();
+        }
     }
 
     protected void closeStreams() {
@@ -170,16 +220,20 @@ public class UserInput implements Runnable {
     }
 
     protected void handleFireTransfer(String received) {
+        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
+        String username = map.get("username");
+        if (username == null) {
+            throw new IllegalStateException("??? How did you receive this without having username in received???");
+        }
+        fileName = map.get("fileName");
+        System.out.println(username + " wants to send you a file: " + fileName);
+        System.out.println();
         System.out.println("""
                 A -> Accept
                 R -> Reject
                 """);
-        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
-        if (map.get("username") == null) {
-            throw new IllegalStateException("??? How did you receive this without having username in received???");
-        }
 
-        fileTransferReceiver = map.get("username");
+        fileTransferReceiver = username;
     }
 
     private void handleFileTransferAnswer(String input) {
@@ -196,7 +250,7 @@ public class UserInput implements Runnable {
             client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer)));
             if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
-                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket);
+                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName);
                 fileTransferReceiver.start();
             }
         } catch (IOException e) {
@@ -212,5 +266,17 @@ public class UserInput implements Runnable {
         for (OnClientExited listener : onClientExitedListeners) {
             listener.onClientExited();
         }
+    }
+
+    public void setResponse(boolean response) {
+        this.response = response;
+    }
+
+    public void setGgStarted(boolean ggStarted) {
+        this.ggStarted = ggStarted;
+    }
+
+    public void setJoinedGame(boolean joinedGame) {
+        this.joinedGame = joinedGame;
     }
 }

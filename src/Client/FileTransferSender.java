@@ -17,7 +17,6 @@ public class FileTransferSender extends Thread {
         try {
             FileInputStream fileInputStream = new FileInputStream(path);
             OutputStream outputStream = socket.getOutputStream();
-            outputStream.write("ME".getBytes());
             fileInputStream.transferTo(outputStream);
 
         } catch (IOException e) {

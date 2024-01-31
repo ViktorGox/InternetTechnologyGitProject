@@ -42,7 +42,7 @@ public class GuessGame extends Thread {
                 handleStartCompletion();
                 stopTimer(startTimer);
             }
-        }, 15000);
+        }, 5000);
     }
 
 
@@ -70,7 +70,7 @@ public class GuessGame extends Thread {
                 handleGameCompletion();
                 stopTimer(gameTimer);
             }
-        }, 10);
+        }, 30000);
     }
 
     private void handleGameCompletion() {
@@ -84,6 +84,7 @@ public class GuessGame extends Thread {
         Map<String, Long> leaderboard = convertToUsernameMap(gamerTimes);
         JsonMessage jsonMessage = new LeaderboardMessage(leaderboard);
         Server.getInstance().broadcastTo(end, jsonMessage, gamers);
+        Server.getInstance().setGameCreated(false);
     }
 
 
@@ -114,7 +115,6 @@ public class GuessGame extends Thread {
         numberToGuess = random.nextInt(51) + 1;
     }
 
-    //TODO: ASK HERE
     synchronized public void processGuess(ServerSideClient gamer) {
         long currentTime = System.currentTimeMillis();
         long timeElapsed = (currentTime - gameStartTime) / 1000;

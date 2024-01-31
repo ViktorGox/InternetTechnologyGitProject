@@ -233,10 +233,13 @@ public class ServerSideClient implements Runnable {
         JsonMessage messageToSend;
         try {
             int guess = Integer.parseInt(message.get("guess"));
-            if (guess < 1 || guess > 50) {
+            if(!Server.getInstance().isGameCreated()){
+                messageToSend = new MessageError("8008");
+            }
+            else if (guess < 1 || guess > 50) {
                 messageToSend = new MessageError("8006");
             } else {
-                messageToSend = new MessageGuess(Server.guessGame.compareNumber(guess, this));
+                messageToSend = new MessageGuess(Integer.toString(Server.guessGame.compareNumber(guess, this)));
             }
         } catch (NumberFormatException e) {
             messageToSend = new MessageError("8005");

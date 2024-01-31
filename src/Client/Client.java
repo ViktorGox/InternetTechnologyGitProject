@@ -11,7 +11,6 @@ import java.net.Socket;
 public class Client implements OnClientExited {
     private UserInput userInput;
     private boolean keepListening = true;
-    private boolean guessingGame = false;
 
     public static void main(String[] args) {
         new Client().start();
@@ -53,14 +52,31 @@ public class Client implements OnClientExited {
         switch (clientCommand.getCommand()) {
             case "PING" -> handlePingPong();
             case "FILE_TRF" -> userInput.handleFireTransfer(clientCommand.getMessage());
-            case "GG_CREATE_RESP" -> setGuessingGame(true);
+            case "GG_GUESS_RESP" -> handleGuessResponse(clientCommand.getMessage());
+            case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(clientCommand.getMessage());
+            case "GG_GUESS_START" -> userInput.setGgStarted(true);
+            case "GG_GUESS_END" -> userInput.setJoinedGame(false);
             case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
         }
+    }
+
+    private void handleGuessResponse(String message) {
+        if(message.contains("0")){
+            userInput.setJoinedGame(false);
+        }
+        userInput.setResponse(true);
     }
 
     private void handlePingPong() {
         userInput.writer.println("PONG");
         System.out.println("Heartbeat Test Successful");
+    }
+
+    private void handleJoiningGame(String message){
+        if(message.contains("OK")){
+            userInput.setJoinedGame(true);
+        }
+        userInput.setResponse(true);
     }
 
     private void startUserInput(PrintWriter writer, BufferedReader reader) {
@@ -75,11 +91,4 @@ public class Client implements OnClientExited {
         keepListening = false;
     }
 
-    public boolean isGuessingGame() {
-        return guessingGame;
-    }
-
-    public void setGuessingGame(boolean guessingGame) {
-        this.guessingGame = guessingGame;
-    }
 }

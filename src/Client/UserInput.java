@@ -20,6 +20,9 @@ public class UserInput implements Runnable {
     protected final BufferedReader reader;
     private String username;
     private boolean terminate = false;
+    private volatile boolean response = false;
+    private boolean joinedGame = false;
+    private volatile boolean ggStarted = false;
     private ArrayList<OnClientExited> onClientExitedListeners = new ArrayList<>();
     private FileTransferSender fileTransferSender;
     private String fileName;
@@ -122,23 +125,56 @@ public class UserInput implements Runnable {
         System.out.println("Client accepted the file transfer");
     }
 
-    public void guessGame() {
+    private void guessGame() {
         writer.println("GG_CREATE");
+        waitForGameResponse();
+        if(joinedGame) {
+            waitForGameStart();
+            makeGuess();
+        }
+    }
+
+    private void waitForGameStart() {
+        System.out.println("Waiting for the game to start, hang on tight!");
+        while (!ggStarted) {
+            Thread.onSpinWait();
+        }
+        ggStarted = false;
+    }
+
+    private void waitForGameResponse(){
+        while (!response) {
+            Thread.onSpinWait();
+        }
+        response = false;
     }
 
     private void makeGuess() {
-        System.out.println("Make a guess between 1 and 50");
-        int guess = Integer.parseInt(inputScanner.nextLine());
-        MessageGuess messageGuess = new MessageGuess(guess);
-        try {
-            writer.println("GG_GUESS " + messageGuess.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        while (joinedGame) {
+            System.out.println("If you want to quit enter q");
+            System.out.println("Make a guess between 1 and 50");
+            String input = inputScanner.nextLine().toLowerCase();
+            if (input.equals("q")) {
+                joinedGame = false;
+            } else {
+                MessageGuess messageGuess = new MessageGuess(input);
+                try {
+                    writer.println("GG_GUESS " + messageGuess.mapToJson());
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                waitForGameResponse();
+            }
         }
     }
 
     private void joinGame() {
         writer.println("GG_JOIN");
+        waitForGameResponse();
+        if(joinedGame) {
+            waitForGameStart();
+            makeGuess();
+        }
     }
 
     protected void closeStreams() {
@@ -213,5 +249,17 @@ public class UserInput implements Runnable {
         for (OnClientExited listener : onClientExitedListeners) {
             listener.onClientExited();
         }
+    }
+
+    public void setResponse(boolean response) {
+        this.response = response;
+    }
+
+    public void setGgStarted(boolean ggStarted) {
+        this.ggStarted = ggStarted;
+    }
+
+    public void setJoinedGame(boolean joinedGame) {
+        this.joinedGame = joinedGame;
     }
 }

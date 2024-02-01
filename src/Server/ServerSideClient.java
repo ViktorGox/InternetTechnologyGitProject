@@ -198,46 +198,55 @@ public class ServerSideClient implements Runnable {
 
     private void commandGGCreate(Map<String, String> message) {
         JsonMessage messageToSend;
-        if (Server.getInstance().isGameCreated()) {
+        if(!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        }
+        else if (Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8001");
         } else {
             messageToSend = new MessageGoodStatus();
             Server.getInstance().setGameCreated(true);
+            Server.getInstance().broadcastAllIgnoreSender(GuessingGameHeader.GG_INVITATION, new MessageInvite(), this.username);
+            Server.guessGame = new GuessGame(this);
+            Server.guessGame.start();
         }
         sendToClient(GuessingGameHeader.GG_CREATE_RESP, messageToSend);
-        Server.getInstance().broadcastAllIgnoreSender(GuessingGameHeader.GG_INVITATION, new MessageInvite(), this.username);
-        Server.guessGame = new GuessGame(this);
-        Server.guessGame.start();
 
     }
 
     private void commandGGJoin(Map<String, String> message) {
         JsonMessage messageToSend;
-        if (!Server.getInstance().isGameCreated()) {
+        if (!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        }
+        else if (!Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8002");
         } else if (hasJoinedGame) {
             messageToSend = new MessageError("8003");
         } else {
             messageToSend = new MessageGoodStatus();
+            Server.guessGame.addGamer(this);
         }
         sendToClient(GuessingGameHeader.GG_JOIN_RESP, messageToSend);
-        Server.guessGame.addGamer(this);
     }
 
     private void commandGG_Guess(Map<String, String> message) {
         JsonMessage messageToSend;
-        try {
-            int guess = Integer.parseInt(message.get("guess"));
-            if(!Server.getInstance().isGameCreated()){
-                messageToSend = new MessageError("8008");
+        if (!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        } else {
+            try {
+                int guess = Integer.parseInt(message.get("guess"));
+                if (!Server.getInstance().isGameCreated()) {
+                    messageToSend = new MessageError("8008");
+                } else if (guess < 1 || guess > 50) {
+                    messageToSend = new MessageError("8006");
+                } else {
+                    messageToSend = new MessageGuess(Integer.toString(Server.guessGame.compareNumber(guess, this)));
+                }
+            } catch (NumberFormatException e) {
+                messageToSend = new MessageError("8005");
             }
-            else if (guess < 1 || guess > 50) {
-                messageToSend = new MessageError("8006");
-            } else {
-                messageToSend = new MessageGuess(Integer.toString(Server.guessGame.compareNumber(guess, this)));
-            }
-        } catch (NumberFormatException e) {
-            messageToSend = new MessageError("8005");
         }
         sendToClient(GuessingGameHeader.GG_GUESS_RESP, messageToSend);
     }

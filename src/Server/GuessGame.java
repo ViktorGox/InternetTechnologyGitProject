@@ -37,7 +37,7 @@ public class GuessGame extends Thread {
                 handleStartCompletion();
                 stopTimer(startTimer);
             }
-        }, 5000);
+        }, 15000);
     }
 
 
@@ -50,13 +50,13 @@ public class GuessGame extends Thread {
         } else {
             jsonMessage = new MessageGoodStatus();
             generateRandomNumber();
+            startGameTimer();
         }
         Server.getInstance().broadcastTo(GuessingGameHeader.GG_GUESS_START, jsonMessage, gamers);
-        System.out.println("GAME HAS STARTED");
-        startGameTimer();
     }
 
     private void startGameTimer() {
+        System.out.println("GAME HAS STARTED");
         gameTimer = new Timer();
         gameStartTime = System.currentTimeMillis();
         gameTimer.schedule(new TimerTask() {

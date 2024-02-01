@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
+import java.util.zip.ZipEntry;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
@@ -65,13 +66,20 @@ public class Client implements OnClientExited {
             case "FILE_TRF" -> userInput.handleFireTransfer(clientCommand.getMessage());
             case "GG_GUESS_RESP" -> handleGuessResponse(clientCommand.getMessage());
             case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(clientCommand.getMessage());
-            case "GG_GUESS_START" -> userInput.setGgStarted(true);
+            case "GG_GUESS_START" -> handleStartGame(clientCommand.getMessage());
             case "GG_GUESS_END" -> userInput.setJoinedGame(false);
             case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
             case "LOGIN_RESP" -> handleEncryption(clientCommand.getMessage());
             case "REQ_PUBLIC_KEY" ->
                     handlePublicKeyRequest(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
         }
+    }
+
+    private void handleStartGame(String message) {
+        if (!message.contains("OK")){
+            userInput.setJoinedGame(false);
+        }
+        userInput.setGgStarted(true);
     }
 
     public void handlePublicKeyRequest(Map<String, String> message) {

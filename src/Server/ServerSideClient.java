@@ -1,8 +1,9 @@
 package Server;
 
-import Messages.Broadcast.MessageBroadcast;
-import Messages.*;
-import Messages.PrivateMessage.PrivateReceiveMessage;
+import Shared.Headers.*;
+import Shared.Messages.Broadcast.MessageBroadcast;
+import Shared.Messages.*;
+import Shared.Messages.PrivateMessage.MessagePrivateReceive;
 import Shared.ClientCommand;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -10,7 +11,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
@@ -90,13 +90,13 @@ public class ServerSideClient implements Runnable {
 
         ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
         if (senderReceiver == null) {
-            this.sendToClient("FILE_TRF_ANSWER", new MessageError("??????"));
+            this.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, new MessageError("??????"));
             return;
         }
 
         MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer));
 
-        senderReceiver.sendToClient("FILE_TRF_ANSWER", mfta);
+        senderReceiver.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, mfta);
     }
 
     private void commandFileTransfer(Map<String, String> message) {
@@ -106,15 +106,15 @@ public class ServerSideClient implements Runnable {
 
         ServerSideClient receiverClient = Server.getInstance().getUser(receiver);
         if (receiverClient == null) {
-            this.sendToClient("FILE_TRF_RESP", new MessageError("3001"));
+            this.sendToClient(FileTransferHeader.FILE_TRF_RESP, new MessageError("3001"));
             return;
         }
         if (!isLoggedIn) {
-            this.sendToClient("FILE_TRF_RESP", new MessageError("3000"));
+            this.sendToClient(FileTransferHeader.FILE_TRF_RESP, new MessageError("3000"));
             return;
         }
         if (receiverClient.username.equals(username)) {
-            this.sendToClient("FILE_TRF_RESP", new MessageError("3003"));
+            this.sendToClient(FileTransferHeader.FILE_TRF_RESP, new MessageError("3003"));
             return;
         }
 
@@ -122,7 +122,7 @@ public class ServerSideClient implements Runnable {
         FIleTransfer fIleTransfer = new FIleTransfer(Server.getInstance().getFileTransferSocket());
         fIleTransfer.start();
 
-        receiverClient.sendToClient("FILE_TRF", mft);
+        receiverClient.sendToClient(FileTransferHeader.FILE_TRF, mft);
 
     }
 
@@ -136,7 +136,6 @@ public class ServerSideClient implements Runnable {
 
     private void commandLogIn(Map<String, String> message) {
         String username = message.get("username");
-        String responseCommand = "LOGIN_RESP";
 
         JsonMessage finalMessage;
         if (isLoggedIn) {
@@ -156,28 +155,26 @@ public class ServerSideClient implements Runnable {
             }
         }
 
-        sendToClient(responseCommand, finalMessage);
+        sendToClient(LoginHeader.LOGIN_RESP, finalMessage);
     }
 
     private void commandBroadcastReq(Map<String, String> message) {
         String messageS = message.get("message");
-        String responseCommand = "BROADCAST_RESP";
 
 
         if (!isLoggedIn) {
-            sendToClient(responseCommand, new MessageError("6000"));
+            sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageError("6000"));
             return;
         }
-        sendToClient(responseCommand, new MessageGoodStatus());
+        sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageGoodStatus());
 
         JsonMessage messageToBroadcast = new MessageBroadcast(this.username, messageS);
-        Server.getInstance().broadcastAllIgnoreSender("BROADCAST", messageToBroadcast, this.username);
+        Server.getInstance().broadcastAllIgnoreSender(BroadcastHeader.BROADCAST, messageToBroadcast, this.username);
     }
 
     private void commandPrivateSend(Map<String, String> message) {
         String receiver = message.get("username");
         String messageS = message.get("message");
-        String responseCommand = "PRIVATE_RESP";
 
         JsonMessage finalMessage;
         if (!isLoggedIn) {
@@ -191,60 +188,67 @@ public class ServerSideClient implements Runnable {
         } else {
             finalMessage = new MessageGoodStatus();
 
-            Server.getInstance().broadcastTo("PRIVATE_RECEIVE", new PrivateReceiveMessage(this.username, messageS)
+            Server.getInstance().broadcastTo(PrivateMessageHeader.PRIVATE_RECEIVE
+                    , new MessagePrivateReceive(this.username, messageS)
                     , Server.getInstance().getUser(receiver));
         }
         // Handle sender answer.
-        sendToClient(responseCommand, finalMessage);
+        sendToClient(PrivateMessageHeader.PRIVATE_RESP, finalMessage);
     }
 
     private void commandGGCreate(Map<String, String> message) {
-        String code = "GG_CREATE_RESP";
         JsonMessage messageToSend;
-        if (Server.getInstance().isGameCreated()) {
+        if(!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        }
+        else if (Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8001");
         } else {
             messageToSend = new MessageGoodStatus();
             Server.getInstance().setGameCreated(true);
+            Server.getInstance().broadcastAllIgnoreSender(GuessingGameHeader.GG_INVITATION, new MessageInvite(), this.username);
+            Server.guessGame = new GuessGame(this);
+            Server.guessGame.start();
         }
-        sendToClient(code, messageToSend);
-        Server.getInstance().broadcastAllIgnoreSender("GG_INVITE", new MessageInvite(), this.username);
-        Server.guessGame = new GuessGame(this);
-        Server.guessGame.start();
+        sendToClient(GuessingGameHeader.GG_CREATE_RESP, messageToSend);
 
     }
 
     private void commandGGJoin(Map<String, String> message) {
-        String code = "GG_JOIN_RESP";
         JsonMessage messageToSend;
-        if (!Server.getInstance().isGameCreated()) {
+        if (!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        }
+        else if (!Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8002");
         } else if (hasJoinedGame) {
             messageToSend = new MessageError("8003");
         } else {
             messageToSend = new MessageGoodStatus();
+            Server.guessGame.addGamer(this);
         }
-        sendToClient(code, messageToSend);
-        Server.guessGame.addGamer(this);
+        sendToClient(GuessingGameHeader.GG_JOIN_RESP, messageToSend);
     }
 
     private void commandGG_Guess(Map<String, String> message) {
-        String code = "GG_GUESS_RESP";
         JsonMessage messageToSend;
-        try {
-            int guess = Integer.parseInt(message.get("guess"));
-            if(!Server.getInstance().isGameCreated()){
-                messageToSend = new MessageError("8008");
+        if (!isLoggedIn){
+            messageToSend = new MessageError("8010");
+        } else {
+            try {
+                int guess = Integer.parseInt(message.get("guess"));
+                if (!Server.getInstance().isGameCreated()) {
+                    messageToSend = new MessageError("8008");
+                } else if (guess < 1 || guess > 50) {
+                    messageToSend = new MessageError("8006");
+                } else {
+                    messageToSend = new MessageGuess(Integer.toString(Server.guessGame.compareNumber(guess, this)));
+                }
+            } catch (NumberFormatException e) {
+                messageToSend = new MessageError("8005");
             }
-            else if (guess < 1 || guess > 50) {
-                messageToSend = new MessageError("8006");
-            } else {
-                messageToSend = new MessageGuess(Integer.toString(Server.guessGame.compareNumber(guess, this)));
-            }
-        } catch (NumberFormatException e) {
-            messageToSend = new MessageError("8005");
         }
-        sendToClient(code, messageToSend);
+        sendToClient(GuessingGameHeader.GG_GUESS_RESP, messageToSend);
     }
 
     private void commandGGLeave(Map<String, String> message) {
@@ -265,10 +269,10 @@ public class ServerSideClient implements Runnable {
         return username;
     }
 
-    public void sendToClient(String code, JsonMessage message) {
+    public void sendToClient(Enum header, JsonMessage message) {
         try {
-            System.out.println("Sending to client: " + code + " " + message.mapToJson());
-            writer.println(code.toUpperCase() + message.mapToJson());
+            System.out.println("Sending to client: " + header + " " + message.mapToJson());
+            writer.println(header + message.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

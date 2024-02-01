@@ -1,8 +1,11 @@
 package Client;
 
-import Messages.Broadcast.MessageBroadcastRequest;
-import Messages.*;
-import Messages.PrivateMessage.PrivateSendMessage;
+import Shared.Headers.*;
+import Shared.Messages.Broadcast.MessageBroadcastRequest;
+import Shared.Messages.Encryption.MessageEncPrivateSend;
+import Shared.Messages.Encryption.MessageReqPublicKey;
+import Shared.Messages.*;
+import Shared.Messages.PrivateMessage.MessagePrivateSend;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -14,10 +17,14 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 
+import static Client.Client.DISPLAY_RAW_DEBUG;
+import static Server.ServerSideClient.VALID_USERNAME_REGEX;
+
 public class UserInput implements Runnable {
     protected Scanner inputScanner;
     protected final PrintWriter writer;
     protected final BufferedReader reader;
+    private final Client client;
     private String username;
     private boolean terminate = false;
     private volatile boolean response = false;
@@ -32,9 +39,10 @@ public class UserInput implements Runnable {
             1: Log in
             2: Broadcast a message
             3: Send private message
-            4: File Transfer
-            5: Create a Guessing Game
-            6: Join a Guessing Game
+            4: Send encrypted message
+            5: File Transfer
+            6: Create a Guessing Game
+            7: Join a Guessing Game
             X: Logout
             ?: This menu
             Q: Quit
@@ -42,9 +50,10 @@ public class UserInput implements Runnable {
 
     private String fileTransferReceiver;
 
-    public UserInput(PrintWriter writer, BufferedReader reader) {
+    public UserInput(PrintWriter writer, BufferedReader reader, Client client) {
         this.writer = writer;
         this.reader = reader;
+        this.client = client;
     }
 
     @Override
@@ -58,9 +67,10 @@ public class UserInput implements Runnable {
                 case "1" -> logIn();
                 case "2" -> broadcastMessage();
                 case "3" -> privateMessage();
-                case "4" -> fileTransfer();
-                case "5" -> guessGame();
-                case "6" -> joinGame();
+                case "4" -> encryptedPrivateMessage();
+                case "5" -> fileTransfer();
+                case "6" -> guessGame();
+                case "7" -> joinGame();
                 case "X" -> logout();
             }
             if (!terminate) {
@@ -76,26 +86,18 @@ public class UserInput implements Runnable {
         System.out.println("Enter username: ");
         username = inputScanner.nextLine();
         MessageLogin messageLogin = new MessageLogin(username);
-        try {
-            writer.println("LOGIN " + messageLogin.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        client.send(LoginHeader.LOGIN, messageLogin);
     }
 
     public void broadcastMessage() {
         System.out.println("Enter your message: ");
         String message = inputScanner.nextLine();
         MessageBroadcastRequest messageBroadcastRequest = new MessageBroadcastRequest(message);
-        try {
-            writer.println("BROADCAST_REQ " + messageBroadcastRequest.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        client.send(BroadcastHeader.BROADCAST_REQ, messageBroadcastRequest);
     }
 
     public void logout() {
-        writer.println("BYE");
+        client.send(ByeHeader.BYE);
         terminate = true;
     }
 
@@ -112,7 +114,7 @@ public class UserInput implements Runnable {
         }
         MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, fileName);
         try {
-            writer.println("FILE_TRF " + messageFileTransfer.mapToJson());
+            client.send(FileTransferHeader.FILE_TRF, messageFileTransfer);
             Socket clientSocket = new Socket("127.0.0.1", 1338);
             fileTransferSender = new FileTransferSender(clientSocket, "FilesToSend/" + fileName);
         } catch (IOException e) {
@@ -191,12 +193,32 @@ public class UserInput implements Runnable {
         String receiver = inputScanner.nextLine();
         System.out.println("Enter your message: ");
         String message = inputScanner.nextLine();
-        PrivateSendMessage messageBroadcast = new PrivateSendMessage(receiver, message);
-        try {
-            writer.println("PRIVATE_SEND" + messageBroadcast.mapToJson());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        MessagePrivateSend messageBroadcast = new MessagePrivateSend(receiver, message);
+        client.send(PrivateMessageHeader.PRIVATE_SEND, messageBroadcast);
+    }
+
+    private void encryptedPrivateMessage() {
+        System.out.println("Enter receiver:");
+        String receiver = inputScanner.nextLine();
+        System.out.println("Enter your message: ");
+        String message = inputScanner.nextLine();
+
+        String sessionKey = client.getSessionKey(receiver);
+
+        if (sessionKey == null) {
+            handleSessionKeyHandShake(receiver);
         }
+
+        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(receiver, message);
+        client.send(PrivateMessageHeader.PRIVATE_SEND, messageBroadcast);
+    }
+
+    private void handleSessionKeyHandShake(String receiver) {
+        if (!receiver.matches(VALID_USERNAME_REGEX)) {
+            System.out.println("That is not a valid username.");
+            return;
+        }
+        client.send(EncryptedPrivateHeader.REQ_PUBLIC_KEY, new MessageReqPublicKey(receiver));
     }
 
     protected void handleFireTransfer(String received) {
@@ -217,8 +239,8 @@ public class UserInput implements Runnable {
     }
 
     private void handleFileTransferAnswer(String input) {
-//        System.out.println("Handling file transfer answer.");
-//        System.out.println("Line -> " + fileTransferReceiver);
+        if (DISPLAY_RAW_DEBUG) System.out.println("Handling file transfer answer.");
+        if (DISPLAY_RAW_DEBUG) System.out.println("Line -> " + fileTransferReceiver);
         switch (input.toUpperCase()) {
             case "A" -> answerFileTransfer(fileTransferReceiver, true);
             case "R" -> answerFileTransfer(fileTransferReceiver, false);
@@ -227,10 +249,7 @@ public class UserInput implements Runnable {
 
     public void answerFileTransfer(String sender, boolean answer) {
         try {
-//            System.out.println("Sending to server that I " + answer + " the question.");
-            MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(sender, String.valueOf(answer));
-//            System.out.println("UserInput/answerFileTransfer -> Sending to server: " + mfta.mapToJson());
-            writer.println("FILE_TRF_ANSWER " + mfta.mapToJson());
+            client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer)));
             if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
                 FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName);

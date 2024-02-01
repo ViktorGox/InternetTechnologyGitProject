@@ -1,6 +1,6 @@
-package Messages.Broadcast;
+package Shared.Messages.Broadcast;
 
-import Messages.JsonMessage;
+import Shared.Messages.JsonMessage;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class MessageBroadcastRequest extends JsonMessage {

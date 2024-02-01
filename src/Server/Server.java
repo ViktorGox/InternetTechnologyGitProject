@@ -1,6 +1,6 @@
 package Server;
 
-import Messages.JsonMessage;
+import Shared.Messages.JsonMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -102,32 +102,32 @@ public class Server {
         }
         return null;
     }
-
-    public void broadcastAllIgnoreSender(String code, JsonMessage message, String sender) {
-        broadcastAll(code, message, sender);
+    @SuppressWarnings("rawtypes")
+    public void broadcastAllIgnoreSender(Enum header, JsonMessage message, String sender) {
+        broadcastAll(header, message, sender);
     }
-
-    public void broadcastAll(String code, JsonMessage message) {
-        broadcastAll(code, message, "");
+    @SuppressWarnings("rawtypes")
+    public void broadcastAll(Enum header, JsonMessage message) {
+        broadcastAll(header, message, "");
     }
-
-    private void broadcastAll(String code, JsonMessage message, String username) {
+    @SuppressWarnings("rawtypes")
+    private void broadcastAll(Enum header, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
             if(client.getUsername().equals(username)) {
                 continue;
             }
-            client.sendToClient(code, message);
+            client.sendToClient(header, message);
         }
     }
-
-    public void broadcastTo(String code, JsonMessage message, Set<ServerSideClient> receivers) {
+    @SuppressWarnings("rawtypes")
+    public void broadcastTo(Enum header, JsonMessage message, Set<ServerSideClient> receivers) {
         for (ServerSideClient client : receivers) {
-            broadcastTo(code, message, client);
+            broadcastTo(header, message, client);
         }
     }
-
-    public void broadcastTo(String code, JsonMessage message, ServerSideClient receiver) {
-        receiver.sendToClient(code, message);
+    @SuppressWarnings("rawtypes")
+    public void broadcastTo(Enum header, JsonMessage message, ServerSideClient receiver) {
+        receiver.sendToClient(header, message);
     }
 
     public ServerSocket getFileTransferSocket() {

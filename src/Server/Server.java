@@ -141,9 +141,18 @@ public class Server {
         receiver.sendToClient(header, message);
     }
 
+    @SuppressWarnings("rawtypes")
+    public void broadcastTo(Enum header, JsonMessage message, String receiver) {
+        System.out.println("Broadcasting " + message);
+        ServerSideClient receiverClient = getUser(receiver);
+        if(receiverClient == null) {
+            //TODO: return user not found.
+            return;
+        }
+        receiverClient.sendToClient(header, message);
+    }
+
     public ServerSocket getFileTransferSocket() {
         return fileTransferSocket;
     }
-
-
 }

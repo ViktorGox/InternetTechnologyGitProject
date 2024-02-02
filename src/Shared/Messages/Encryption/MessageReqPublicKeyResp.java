@@ -25,8 +25,6 @@ public class MessageReqPublicKeyResp extends JsonMessage {
 
     @Override
     public String mapToJson() {
-        String result = "{\"publicKey\":\"" + Arrays.toString(publicKey) + "\", \"username\":\"" + username + "\"}";
-        System.out.println("Manually mapped to Json: " + result);
-        return result;
+        return "{\"publicKey\":\"" + Arrays.toString(publicKey) + "\", \"username\":\"" + username + "\"}";
     }
 }

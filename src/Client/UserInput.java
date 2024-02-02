@@ -107,7 +107,7 @@ public class UserInput implements Runnable {
         System.out.println("Enter a File name (Example: test.txt):");
         String fileName = inputScanner.nextLine();
         File file = new File("FilesToSend/" + fileName);
-        while(!file.exists()){
+        while (!file.exists()) {
             System.out.println("This file is not in FilesToSend folder, Please Try Again");
             fileName = inputScanner.nextLine();
             file = new File("FilesToSend/" + fileName);
@@ -130,7 +130,7 @@ public class UserInput implements Runnable {
     private void guessGame() {
         writer.println("GG_CREATE");
         waitForGameResponse();
-        if(joinedGame) {
+        if (joinedGame) {
             waitForGameStart();
             makeGuess();
         }
@@ -144,7 +144,7 @@ public class UserInput implements Runnable {
         ggStarted = false;
     }
 
-    private void waitForGameResponse(){
+    private void waitForGameResponse() {
         while (!response) {
             Thread.onSpinWait();
         }
@@ -173,7 +173,7 @@ public class UserInput implements Runnable {
     private void joinGame() {
         writer.println("GG_JOIN");
         waitForGameResponse();
-        if(joinedGame) {
+        if (joinedGame) {
             waitForGameStart();
             makeGuess();
         }
@@ -203,15 +203,18 @@ public class UserInput implements Runnable {
         System.out.println("Enter your message: ");
         String message = inputScanner.nextLine();
 
-        String sessionKey = client.getSessionKey(receiver);
+        byte[] sessionKey = client.getSessionKey(receiver);
 
         if (sessionKey == null) {
             handleSessionKeyHandShake(receiver);
+            client.addToWaitingList(receiver, message);
             return;
         }
 
-        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(receiver, message);
-        client.send(PrivateMessageHeader.PRIVATE_SEND, messageBroadcast);
+        String encryptedMessage = client.getEncryptionHandler().encryptWithSessionKey(message, sessionKey);
+
+        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(receiver, encryptedMessage);
+        client.send(EncryptedPrivateHeader.ENC_PRIVATE_SEND, messageBroadcast);
     }
 
     private void handleSessionKeyHandShake(String receiver) {

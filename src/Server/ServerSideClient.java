@@ -4,8 +4,7 @@ import Shared.ClientCommand;
 import Shared.EncryptionUtils;
 import Shared.Headers.*;
 import Shared.Messages.Broadcast.MessageBroadcast;
-import Shared.Messages.Encryption.MessageReqPublicKey;
-import Shared.Messages.Encryption.MessageReqPublicKeyResp;
+import Shared.Messages.Encryption.*;
 import Shared.Messages.*;
 import Shared.Messages.PrivateMessage.MessagePrivateReceive;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -81,10 +80,28 @@ public class ServerSideClient implements Runnable {
             case "FILE_TRF_ANSWER" -> commandFileTransferAnswer(message);
             case "REQ_PUBLIC_KEY" -> commandReqPublicKey(message);
             case "REQ_PUBLIC_KEY_RESP" -> commandReqPublicKeyResp(message);
+            case "SESSION_KEY_CREATE" -> commandSessionKeyCreate(message);
+            case "SESSION_KEY_CREATE_RESP" -> commandSessionKeyCreateResp(message);
+            case "ENC_PRIVATE_SEND" -> commandEncPrivateSend(message);
             case "BYE" -> commandBye();
             case "PONG" -> pong();
             default -> commandError();
         }
+    }
+
+    private void commandSessionKeyCreateResp(Map<String, String> message) {
+        MessageSessionKeyCreateResp messageJson = new MessageSessionKeyCreateResp("OK", this.username);
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.SESSION_KEY_CREATE_RESP, messageJson, message.get("username"));
+    }
+
+    private void commandEncPrivateSend(Map<String, String> message) {
+        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(this.username, message.get("message"));
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.ENC_PRIVATE_RECEIVE, messageBroadcast, message.get("username"));
+    }
+
+    private void commandSessionKeyCreate(Map<String, String> message) {
+        MessageSessionKeyCreate jsonMessage = new MessageSessionKeyCreate(message.get("session_key"), this.username);
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.SESSION_KEY_CREATE, jsonMessage, message.get("username"));
     }
 
     /**
@@ -94,20 +111,18 @@ public class ServerSideClient implements Runnable {
         this.publicKey = EncryptionUtils.stringByteArrayToPublicKey(message.get("publicKey"));
 
         JsonMessage mrpkr = new MessageReqPublicKeyResp(message.get("publicKey"), this.username);
-        Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP, mrpkr,
-                Server.getInstance().getUser(message.get("username")));
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP, mrpkr, message.get("username"));
     }
 
     private void commandReqPublicKey(Map<String, String> message) {
         byte[] publicKeyEncoded = Server.getInstance().getUserPublicKey(message.get("username"));
-        if (DISPLAY_RAW_DEBUG) System.out.println("Public key from search: " + Arrays.toString(publicKeyEncoded));
         if (publicKeyEncoded != null) {
             sendToClient(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP,
                     new MessageReqPublicKeyResp(Server.getInstance().getUserPublicKey(username), username));
         } else {
             Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY
                     , new MessageReqPublicKey(this.username)
-                    , Server.getInstance().getUser(message.get("username")));
+                    , message.get("username"));
         }
     }
 

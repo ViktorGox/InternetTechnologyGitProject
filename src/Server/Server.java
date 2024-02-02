@@ -5,10 +5,12 @@ import Shared.Messages.JsonMessage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
 
 public class Server {
+    public final boolean PERFORM_PING_PONG = false;
     private static Server instance;
 
     public static Server getInstance() {
@@ -102,6 +104,14 @@ public class Server {
         }
         return null;
     }
+
+    public byte[] getUserPublicKey(String username) {
+        ServerSideClient user = getUser(username);
+        if(user == null) return null;
+        if(user.getPublicKey() == null) return null;
+        return user.getPublicKey().getEncoded();
+    }
+
     @SuppressWarnings("rawtypes")
     public void broadcastAllIgnoreSender(Enum header, JsonMessage message, String sender) {
         broadcastAll(header, message, sender);
@@ -127,10 +137,13 @@ public class Server {
     }
     @SuppressWarnings("rawtypes")
     public void broadcastTo(Enum header, JsonMessage message, ServerSideClient receiver) {
+        System.out.println("Broadcasting " + message);
         receiver.sendToClient(header, message);
     }
 
     public ServerSocket getFileTransferSocket() {
         return fileTransferSocket;
     }
+
+
 }

@@ -207,6 +207,7 @@ public class UserInput implements Runnable {
 
         if (sessionKey == null) {
             handleSessionKeyHandShake(receiver);
+            return;
         }
 
         MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(receiver, message);

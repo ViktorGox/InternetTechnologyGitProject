@@ -116,9 +116,11 @@ public class ServerSideClient implements Runnable {
 
     private void commandReqPublicKey(Map<String, String> message) {
         byte[] publicKeyEncoded = Server.getInstance().getUserPublicKey(message.get("username"));
+        System.out.println("Retrieved the public key for user " + message.get("username") + ", and it is: " +
+                publicKeyEncoded);
         if (publicKeyEncoded != null) {
             sendToClient(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP,
-                    new MessageReqPublicKeyResp(Server.getInstance().getUserPublicKey(username), username));
+                    new MessageReqPublicKeyResp(publicKeyEncoded, message.get("username")));
         } else {
             Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY
                     , new MessageReqPublicKey(this.username)

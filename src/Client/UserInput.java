@@ -71,7 +71,7 @@ public class UserInput implements Runnable {
                 case "5" -> fileTransfer();
                 case "6" -> guessGame();
                 case "7" -> joinGame();
-                case "X" -> logout();
+                case "0" -> logout();
             }
             if (!terminate) {
                 line = inputScanner.nextLine().toLowerCase();
@@ -97,6 +97,7 @@ public class UserInput implements Runnable {
     }
 
     public void logout() {
+        System.out.println("Logout");
         client.send(ByeHeader.BYE);
         terminate = true;
     }

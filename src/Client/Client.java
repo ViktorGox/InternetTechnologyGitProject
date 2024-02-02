@@ -206,7 +206,6 @@ public class Client implements OnClientExited {
     }
 
     public byte[] getSessionKey(String username) {
-        System.out.println("Attempting to get session key from: " + username);
         return encryptionHandler.getSessionKey(username);
     }
 

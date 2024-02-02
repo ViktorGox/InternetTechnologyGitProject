@@ -154,10 +154,6 @@ public class Server {
         receiverClient.sendToClient(header, message);
     }
 
-    public ServerSocket getFileTransferSocket() {
-        return fileTransferSocket;
-    }
-
     public Set<ServerSideClient> getClients() {
         return clients;
     }

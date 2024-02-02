@@ -19,7 +19,6 @@ public class Server {
     }
 
     private final ServerSocket serverSocket;
-    private final ServerSocket fileTransferSocket;
     private final Set<ServerSideClient> clients = new HashSet<>();
     private boolean isGameCreated = false;
     public static GuessGame guessGame;
@@ -32,7 +31,7 @@ public class Server {
         instance = this;
         try {
             this.serverSocket = new ServerSocket(1337);
-            this.fileTransferSocket = new ServerSocket(1338);
+            FileTransfer.getInstance().start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -130,7 +129,7 @@ public class Server {
         receiver.sendToClient(header, message);
     }
 
-    public ServerSocket getFileTransferSocket() {
-        return fileTransferSocket;
+    public Set<ServerSideClient> getClients() {
+        return clients;
     }
 }

@@ -1,5 +1,6 @@
 package Client;
 
+import Server.FileTransfer;
 import Shared.ClientCommand;
 import Shared.Messages.JsonMessage;
 import Shared.Messages.JsonMessageExtractor;
@@ -11,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 
 public class Client implements OnClientExited {
@@ -68,10 +70,18 @@ public class Client implements OnClientExited {
             case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(clientCommand.getMessage());
             case "GG_GUESS_START" -> handleStartGame(clientCommand.getMessage());
             case "GG_GUESS_END" -> userInput.setJoinedGame(false);
-            case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
+            case "FILE_TRF_ANSWER" -> handleFileTransfer(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
             case "LOGIN_RESP" -> handleEncryption(clientCommand.getMessage());
             case "REQ_PUBLIC_KEY" ->
                     handlePublicKeyRequest(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
+        }
+    }
+
+    private void handleFileTransfer(Map<String,String> message) {
+        if(message.get("answer").equals("true")){
+            userInput.startFileTransferSend(UUID.fromString(message.get("uuid")));
+        } else {
+            System.out.println("File Transfer was rejected");
         }
     }
 

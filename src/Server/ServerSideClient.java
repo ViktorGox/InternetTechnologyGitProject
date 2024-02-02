@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
+import java.util.UUID;
 
 public class ServerSideClient implements Runnable {
     public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
@@ -73,10 +74,16 @@ public class ServerSideClient implements Runnable {
             case "GG_LEAVE" -> commandGGLeave(message);
             case "FILE_TRF" -> commandFileTransfer(message);
             case "FILE_TRF_ANSWER" -> commandFileTransferAnswer(message);
+            case "USER_LIST" -> commandUserList();
             case "BYE" -> commandBye();
             case "PONG" -> pong();
             default -> commandError();
         }
+    }
+
+    private void commandUserList() {
+        MessageUserList messageUserList = new MessageUserList(Server.getInstance().getClients());
+        sendToClient(UserListHeader.USER_LIST_RESP, messageUserList);
     }
 
     private void commandFileTransferAnswer(Map<String, String> message) {
@@ -85,7 +92,9 @@ public class ServerSideClient implements Runnable {
         });
         String answer = message.get("answer");
         String sender = message.get("username");
-        System.out.println("ServerSideClient/commandFileTransferAnswer -> answer: " + answer + ", username: " + sender);
+        UUID uuid = UUID.fromString(message.get("uuid"));
+        System.out.println("ServerSideClient/commandFileTransferAnswer -> answer: " + answer + ", username: " + sender +
+        ", UUID: " + uuid);
 
 
         ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
@@ -94,7 +103,7 @@ public class ServerSideClient implements Runnable {
             return;
         }
 
-        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer));
+        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer), uuid);
 
         senderReceiver.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, mfta);
     }
@@ -119,8 +128,6 @@ public class ServerSideClient implements Runnable {
         }
 
         MessageFileTransfer mft = new MessageFileTransfer(username, fileName);
-        FIleTransfer fIleTransfer = new FIleTransfer(Server.getInstance().getFileTransferSocket());
-        fIleTransfer.start();
 
         receiverClient.sendToClient(FileTransferHeader.FILE_TRF, mft);
 

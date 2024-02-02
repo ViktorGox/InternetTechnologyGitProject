@@ -1,5 +1,6 @@
 package Client;
 
+import Server.FileTransfer;
 import Shared.ClientCommand;
 import Shared.EncryptionUtils;
 import Shared.Headers.EncryptedPrivateHeader;
@@ -18,6 +19,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.PublicKey;
 import java.util.Map;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
@@ -71,7 +74,7 @@ public class Client implements OnClientExited {
             case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(clientCommand.getMessage());
             case "GG_GUESS_START" -> handleStartGame(clientCommand.getMessage());
             case "GG_GUESS_END" -> userInput.setJoinedGame(false);
-            case "FILE_TRF_ANSWER" -> userInput.startFileTransferSend();
+            case "FILE_TRF_ANSWER" -> handleFileTransfer(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
             case "LOGIN_RESP" -> handleEncryption(clientCommand.getMessage());
             case "REQ_PUBLIC_KEY" ->
                     handlePublicKeyRequest(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
@@ -156,6 +159,14 @@ public class Client implements OnClientExited {
         send(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP, sendMessage);
     }
 
+    private void handleFileTransfer(Map<String,String> message) {
+        if(message.get("answer").equals("true")){
+            userInput.startFileTransferSend(UUID.fromString(message.get("uuid")));
+        } else {
+            System.out.println("File Transfer was rejected");
+        }
+    }
+
     private void handleStartGame(String message) {
         if (!message.contains("OK")) {
             userInput.setJoinedGame(false);
@@ -163,7 +174,6 @@ public class Client implements OnClientExited {
         userInput.setGgStarted(true);
     }
 
-    //change me
     private void handleEncryption(String message) {
         if (!message.contains("OK")) return;
         encryptionHandler = new EncryptionHandler();

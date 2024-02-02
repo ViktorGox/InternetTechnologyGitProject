@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 
 import static Client.Client.DISPLAY_RAW_DEBUG;
 
@@ -83,6 +84,7 @@ public class ServerSideClient implements Runnable {
             case "SESSION_KEY_CREATE" -> commandSessionKeyCreate(message);
             case "SESSION_KEY_CREATE_RESP" -> commandSessionKeyCreateResp(message);
             case "ENC_PRIVATE_SEND" -> commandEncPrivateSend(message);
+            case "USER_LIST" -> commandUserList();
             case "BYE" -> commandBye();
             case "PONG" -> pong();
             default -> commandError();
@@ -128,13 +130,20 @@ public class ServerSideClient implements Runnable {
         }
     }
 
+    private void commandUserList() {
+        MessageUserList messageUserList = new MessageUserList(Server.getInstance().getClients());
+        sendToClient(UserListHeader.USER_LIST_RESP, messageUserList);
+    }
+
     private void commandFileTransferAnswer(Map<String, String> message) {
         message.forEach((key, data) -> {
             System.out.println(key + " / " + data);
         });
         String answer = message.get("answer");
         String sender = message.get("username");
-        System.out.println("ServerSideClient/commandFileTransferAnswer -> answer: " + answer + ", username: " + sender);
+        UUID uuid = UUID.fromString(message.get("uuid"));
+        System.out.println("ServerSideClient/commandFileTransferAnswer -> answer: " + answer + ", username: " + sender +
+        ", UUID: " + uuid);
 
 
         ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
@@ -143,7 +152,7 @@ public class ServerSideClient implements Runnable {
             return;
         }
 
-        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer));
+        MessageFileTrfAnswer mfta = new MessageFileTrfAnswer(username, String.valueOf(answer), uuid);
 
         senderReceiver.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, mfta);
     }
@@ -168,8 +177,6 @@ public class ServerSideClient implements Runnable {
         }
 
         MessageFileTransfer mft = new MessageFileTransfer(username, fileName);
-        FIleTransfer fIleTransfer = new FIleTransfer(Server.getInstance().getFileTransferSocket());
-        fIleTransfer.start();
 
         receiverClient.sendToClient(FileTransferHeader.FILE_TRF, mft);
 

@@ -5,7 +5,6 @@ import Shared.Messages.JsonMessage;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +20,6 @@ public class Server {
     }
 
     private final ServerSocket serverSocket;
-    private final ServerSocket fileTransferSocket;
     private final Set<ServerSideClient> clients = new HashSet<>();
     private boolean isGameCreated = false;
     public static GuessGame guessGame;
@@ -34,7 +32,7 @@ public class Server {
         instance = this;
         try {
             this.serverSocket = new ServerSocket(1337);
-            this.fileTransferSocket = new ServerSocket(1338);
+            FileTransfer.getInstance().start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -64,7 +62,7 @@ public class Server {
         }
     }
 
-    private void handleFileTransferClient(){
+    private void handleFileTransferClient() {
 
     }
 
@@ -107,8 +105,8 @@ public class Server {
 
     public byte[] getUserPublicKey(String username) {
         ServerSideClient user = getUser(username);
-        if(user == null) return null;
-        if(user.getPublicKey() == null) return null;
+        if (user == null) return null;
+        if (user.getPublicKey() == null) return null;
         return user.getPublicKey().getEncoded();
     }
 
@@ -116,25 +114,29 @@ public class Server {
     public void broadcastAllIgnoreSender(Enum header, JsonMessage message, String sender) {
         broadcastAll(header, message, sender);
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastAll(Enum header, JsonMessage message) {
         broadcastAll(header, message, "");
     }
+
     @SuppressWarnings("rawtypes")
     private void broadcastAll(Enum header, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
-            if(client.getUsername().equals(username)) {
+            if (client.getUsername().equals(username)) {
                 continue;
             }
             client.sendToClient(header, message);
         }
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastTo(Enum header, JsonMessage message, Set<ServerSideClient> receivers) {
         for (ServerSideClient client : receivers) {
             broadcastTo(header, message, client);
         }
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastTo(Enum header, JsonMessage message, ServerSideClient receiver) {
         System.out.println("Broadcasting " + message);
@@ -145,7 +147,7 @@ public class Server {
     public void broadcastTo(Enum header, JsonMessage message, String receiver) {
         System.out.println("Broadcasting " + message);
         ServerSideClient receiverClient = getUser(receiver);
-        if(receiverClient == null) {
+        if (receiverClient == null) {
             //TODO: return user not found.
             return;
         }
@@ -154,5 +156,9 @@ public class Server {
 
     public ServerSocket getFileTransferSocket() {
         return fileTransferSocket;
+    }
+
+    public Set<ServerSideClient> getClients() {
+        return clients;
     }
 }

@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.UUID;
 
 import static Client.Client.DISPLAY_RAW_DEBUG;
 import static Server.ServerSideClient.VALID_USERNAME_REGEX;
@@ -43,6 +44,7 @@ public class UserInput implements Runnable {
             5: File Transfer
             6: Create a Guessing Game
             7: Join a Guessing Game
+            8: User List
             X: Logout
             ?: This menu
             Q: Quit
@@ -71,6 +73,7 @@ public class UserInput implements Runnable {
                 case "5" -> fileTransfer();
                 case "6" -> guessGame();
                 case "7" -> joinGame();
+                case "8" -> userList();
                 case "0" -> logout();
             }
             if (!terminate) {
@@ -80,6 +83,10 @@ public class UserInput implements Runnable {
         }
         System.out.println("EXITED");
         fireEvent();
+    }
+
+    private void userList() {
+        client.send(UserListHeader.USER_LIST);
     }
 
     public void logIn() {
@@ -97,7 +104,6 @@ public class UserInput implements Runnable {
     }
 
     public void logout() {
-        System.out.println("Logout");
         client.send(ByeHeader.BYE);
         terminate = true;
     }
@@ -106,24 +112,26 @@ public class UserInput implements Runnable {
         System.out.println("Receiver username: ");
         String receiver = inputScanner.nextLine();
         System.out.println("Enter a File name (Example: test.txt):");
-        String fileName = inputScanner.nextLine();
+        fileName = inputScanner.nextLine();
         File file = new File("FilesToSend/" + fileName);
         while (!file.exists()) {
             System.out.println("This file is not in FilesToSend folder, Please Try Again");
             fileName = inputScanner.nextLine();
             file = new File("FilesToSend/" + fileName);
         }
+
         MessageFileTransfer messageFileTransfer = new MessageFileTransfer(receiver, fileName);
+        client.send(FileTransferHeader.FILE_TRF, messageFileTransfer);
+    }
+
+    public void startFileTransferSend(UUID uuid) {
+        Socket clientSocket = null;
         try {
-            client.send(FileTransferHeader.FILE_TRF, messageFileTransfer);
-            Socket clientSocket = new Socket("127.0.0.1", 1338);
-            fileTransferSender = new FileTransferSender(clientSocket, "FilesToSend/" + fileName);
+            clientSocket = new Socket("127.0.0.1", 1338);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void startFileTransferSend() {
+        fileTransferSender = new FileTransferSender(clientSocket, "FilesToSend/" + fileName, uuid);
         fileTransferSender.start();
         System.out.println("Client accepted the file transfer");
     }
@@ -254,10 +262,11 @@ public class UserInput implements Runnable {
 
     public void answerFileTransfer(String sender, boolean answer) {
         try {
-            client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer)));
+            UUID uuid = UUID.randomUUID();
+            client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer),uuid));
             if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
-                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName);
+                FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName, uuid);
                 fileTransferReceiver.start();
             }
         } catch (IOException e) {

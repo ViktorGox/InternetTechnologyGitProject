@@ -1,10 +1,12 @@
 package Server;
 
+import Shared.ClientCommand;
+import Shared.EncryptionUtils;
 import Shared.Headers.*;
 import Shared.Messages.Broadcast.MessageBroadcast;
+import Shared.Messages.Encryption.*;
 import Shared.Messages.*;
 import Shared.Messages.PrivateMessage.MessagePrivateReceive;
-import Shared.ClientCommand;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
@@ -12,20 +14,23 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
+import static Client.Client.DISPLAY_RAW_DEBUG;
+
 public class ServerSideClient implements Runnable {
     public static final String VALID_USERNAME_REGEX = "^[a-zA-Z0-9_]{3,14}$";
-    private final boolean PERFORM_PING_PONG = false;
     private final PrintWriter writer;
     private final BufferedReader reader;
-    private PingPongInteraction pingPongInteraction;
+    private PublicKey publicKey;
     private String username;
+    private PingPongInteraction pingPongInteraction;
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
     private final Socket socket;
-
 
     public ServerSideClient(Socket socket) throws IOException {
         this.socket = socket;
@@ -74,10 +79,54 @@ public class ServerSideClient implements Runnable {
             case "GG_LEAVE" -> commandGGLeave(message);
             case "FILE_TRF" -> commandFileTransfer(message);
             case "FILE_TRF_ANSWER" -> commandFileTransferAnswer(message);
+            case "REQ_PUBLIC_KEY" -> commandReqPublicKey(message);
+            case "REQ_PUBLIC_KEY_RESP" -> commandReqPublicKeyResp(message);
+            case "SESSION_KEY_CREATE" -> commandSessionKeyCreate(message);
+            case "SESSION_KEY_CREATE_RESP" -> commandSessionKeyCreateResp(message);
+            case "ENC_PRIVATE_SEND" -> commandEncPrivateSend(message);
             case "USER_LIST" -> commandUserList();
             case "BYE" -> commandBye();
             case "PONG" -> pong();
             default -> commandError();
+        }
+    }
+
+    private void commandSessionKeyCreateResp(Map<String, String> message) {
+        MessageSessionKeyCreateResp messageJson = new MessageSessionKeyCreateResp("OK", this.username);
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.SESSION_KEY_CREATE_RESP, messageJson, message.get("username"));
+    }
+
+    private void commandEncPrivateSend(Map<String, String> message) {
+        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(this.username, message.get("message"));
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.ENC_PRIVATE_RECEIVE, messageBroadcast, message.get("username"));
+    }
+
+    private void commandSessionKeyCreate(Map<String, String> message) {
+        MessageSessionKeyCreate jsonMessage = new MessageSessionKeyCreate(message.get("session_key"), this.username);
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.SESSION_KEY_CREATE, jsonMessage, message.get("username"));
+    }
+
+    /**
+     * Received public key from client.
+     */
+    private void commandReqPublicKeyResp(Map<String, String> message) {
+        this.publicKey = EncryptionUtils.stringByteArrayToPublicKey(message.get("publicKey"));
+
+        JsonMessage mrpkr = new MessageReqPublicKeyResp(message.get("publicKey"), this.username);
+        Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP, mrpkr, message.get("username"));
+    }
+
+    private void commandReqPublicKey(Map<String, String> message) {
+        byte[] publicKeyEncoded = Server.getInstance().getUserPublicKey(message.get("username"));
+        System.out.println("Retrieved the public key for user " + message.get("username") + ", and it is: " +
+                publicKeyEncoded);
+        if (publicKeyEncoded != null) {
+            sendToClient(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP,
+                    new MessageReqPublicKeyResp(publicKeyEncoded, message.get("username")));
+        } else {
+            Server.getInstance().broadcastTo(EncryptedPrivateHeader.REQ_PUBLIC_KEY
+                    , new MessageReqPublicKey(this.username)
+                    , message.get("username"));
         }
     }
 
@@ -155,7 +204,7 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageGoodStatus();
             isLoggedIn = true;
             this.username = username;
-            if (PERFORM_PING_PONG) {
+            if (Server.getInstance().PERFORM_PING_PONG) {
                 pingPongInteraction = new PingPongInteraction(this);
                 Thread pingPongThread = new Thread(pingPongInteraction);
                 pingPongThread.start();
@@ -205,10 +254,9 @@ public class ServerSideClient implements Runnable {
 
     private void commandGGCreate(Map<String, String> message) {
         JsonMessage messageToSend;
-        if(!isLoggedIn){
+        if (!isLoggedIn) {
             messageToSend = new MessageError("8010");
-        }
-        else if (Server.getInstance().isGameCreated()) {
+        } else if (Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8001");
         } else {
             messageToSend = new MessageGoodStatus();
@@ -223,10 +271,9 @@ public class ServerSideClient implements Runnable {
 
     private void commandGGJoin(Map<String, String> message) {
         JsonMessage messageToSend;
-        if (!isLoggedIn){
+        if (!isLoggedIn) {
             messageToSend = new MessageError("8010");
-        }
-        else if (!Server.getInstance().isGameCreated()) {
+        } else if (!Server.getInstance().isGameCreated()) {
             messageToSend = new MessageError("8002");
         } else if (hasJoinedGame) {
             messageToSend = new MessageError("8003");
@@ -239,7 +286,7 @@ public class ServerSideClient implements Runnable {
 
     private void commandGG_Guess(Map<String, String> message) {
         JsonMessage messageToSend;
-        if (!isLoggedIn){
+        if (!isLoggedIn) {
             messageToSend = new MessageError("8010");
         } else {
             try {
@@ -275,6 +322,11 @@ public class ServerSideClient implements Runnable {
     public String getUsername() {
         return username;
     }
+
+    public PublicKey getPublicKey() {
+        return publicKey;
+    }
+
 
     public void sendToClient(Enum header, JsonMessage message) {
         try {

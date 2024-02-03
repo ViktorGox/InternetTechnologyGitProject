@@ -2,6 +2,9 @@ package Shared;
 
 import Shared.Headers.*;
 
+// Reason for this class it, that at first I wanted to put the headers in the Message classes, which works fine
+// until you get to the error/ok status messages. So I thought of this. We have the enums and you can call them,
+// rather than have to write the strings every time, risking misspelling.
 public class EnumConverter {
     public enum GroupedEnum {
         LOGIN(LoginHeader.class),
@@ -21,10 +24,6 @@ public class EnumConverter {
             this.enumClass = enumClass;
         }
 
-        public Class<? extends Enum<?>> getEnumClass() {
-            return enumClass;
-        }
-
         public static Enum<?> fromString(String value) {
             for (GroupedEnum groupedEnum : values()) {
                 for (Enum<?> enumValue : groupedEnum.enumClass.getEnumConstants()) {
@@ -40,18 +39,4 @@ public class EnumConverter {
     public static void processEnum(Enum<?> enumValue) {
         System.out.println("Processing: " + enumValue);
     }
-
-    //TODO: Remove this.
-//    public static void main(String[] args) {
-//        // Examples of calling the method with different enums
-//        processEnum(UserListHeader.USER_LIST);
-//
-//        // Example of converting a string to an enum within a group
-//        Enum<?> convertedEnum = GroupedEnum.fromString("LOGIN");
-//        if (convertedEnum != null) {
-//            System.out.println("Converted to Enum: " + convertedEnum);
-//        } else {
-//            System.out.println("No matching enum found for input: Red");
-//        }
-//    }
 }

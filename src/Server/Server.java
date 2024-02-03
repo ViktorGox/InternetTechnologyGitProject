@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Server {
+    public final boolean PERFORM_PING_PONG = false;
     private static Server instance;
 
     public static Server getInstance() {
@@ -61,7 +62,7 @@ public class Server {
         }
     }
 
-    private void handleFileTransferClient(){
+    private void handleFileTransferClient() {
 
     }
 
@@ -101,32 +102,56 @@ public class Server {
         }
         return null;
     }
+
+    public byte[] getUserPublicKey(String username) {
+        ServerSideClient user = getUser(username);
+        if (user == null) return null;
+        if (user.getPublicKey() == null) return null;
+        return user.getPublicKey().getEncoded();
+    }
+
     @SuppressWarnings("rawtypes")
     public void broadcastAllIgnoreSender(Enum header, JsonMessage message, String sender) {
         broadcastAll(header, message, sender);
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastAll(Enum header, JsonMessage message) {
         broadcastAll(header, message, "");
     }
+
     @SuppressWarnings("rawtypes")
     private void broadcastAll(Enum header, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
-            if(client.getUsername().equals(username)) {
+            if (client.getUsername().equals(username)) {
                 continue;
             }
             client.sendToClient(header, message);
         }
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastTo(Enum header, JsonMessage message, Set<ServerSideClient> receivers) {
         for (ServerSideClient client : receivers) {
             broadcastTo(header, message, client);
         }
     }
+
     @SuppressWarnings("rawtypes")
     public void broadcastTo(Enum header, JsonMessage message, ServerSideClient receiver) {
+        System.out.println("Broadcasting " + message);
         receiver.sendToClient(header, message);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void broadcastTo(Enum header, JsonMessage message, String receiver) {
+        System.out.println("Broadcasting " + message);
+        ServerSideClient receiverClient = getUser(receiver);
+        if (receiverClient == null) {
+            //TODO: return user not found.
+            return;
+        }
+        receiverClient.sendToClient(header, message);
     }
 
     public Set<ServerSideClient> getClients() {

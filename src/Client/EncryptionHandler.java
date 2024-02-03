@@ -1,12 +1,15 @@
 package Client;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
+import java.util.*;
 
 public class EncryptionHandler {
+
+    private final Map<String, byte[]> sessionKeys = new HashMap<>();
+    private final Map<String, String> awaitingList = new HashMap<>();
     private KeyPair keyPair;
 
     public EncryptionHandler() {
@@ -24,61 +27,71 @@ public class EncryptionHandler {
     }
 
     // Utility method to encrypt a message using the public key
-    private byte[] encrypt(String message, PublicKey publicKey)
-            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-            IllegalBlockSizeException, BadPaddingException {
+
+    public byte[] encryptWithPublicKey(byte[] data, PublicKey publicKey) throws Exception {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return cipher.doFinal(message.getBytes());
+        return cipher.doFinal(data);
     }
 
-    // Utility method to decrypt a message using the private key
-    private String decrypt(byte[] encryptedMessage, PrivateKey privateKey)
-            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-            IllegalBlockSizeException, BadPaddingException {
+    public byte[] decryptWithPrivateKey(byte[] encryptedData, PrivateKey privateKey) throws Exception {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] decryptedBytes = cipher.doFinal(encryptedMessage);
-        return new String(decryptedBytes);
+        return cipher.doFinal(encryptedData);
     }
 
-    // Utility method to convert byte array to hexadecimal string for better representation
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder hexStringBuilder = new StringBuilder(2 * bytes.length);
-        for (byte b : bytes) {
-            hexStringBuilder.append(String.format("%02x", b));
-        }
-        return hexStringBuilder.toString();
+    public byte[] generateRandomKey() {
+        byte[] key = new byte[16]; // 128 bits for AES-128
+        new SecureRandom().nextBytes(key);
+        return key;
     }
 
     public PublicKey getPublicKey() {
         return keyPair.getPublic();
     }
+
+    public PrivateKey getPrivateKey() {
+        return keyPair.getPrivate();
+    }
+
+    public String findWaitingUser(String username) {
+        return awaitingList.get(username);
+    }
+
+    public void addWaitingUser(String username, String message) {
+        awaitingList.put(username, message);
+    }
+
+    public byte[] getSessionKey(String username) {
+        return sessionKeys.get(username);
+    }
+    public void addSessionKey(String username, byte[] sessionKey) {
+        System.out.println("Adding a key for: " + username + ". Key is: " + sessionKey);
+        sessionKeys.put(username, sessionKey);
+    }
+
+    public String encryptWithSessionKey(String plainText, byte[] sessionKey) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES");
+            SecretKey secretKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, "AES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String decryptWithSessionKey(String encryptedText, byte[] sessionKey) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES");
+            SecretKey secretKey = new SecretKeySpec(sessionKey, 0, sessionKey.length, "AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            byte[] encryptedBytes = Base64.getDecoder().decode(encryptedText);
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+            return new String(decryptedBytes);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
-
-
-
-//    public KeyPair generateKeys() {
-//        try {
-//            // Assume you have the public and private keys generated previously
-//            KeyPair keyPair = generateKeyPair();
-//
-//            // Message to be encrypted
-//            String originalMessage = "Hello, World!";
-//
-//            // Encrypt the message using the public key
-//            byte[] encryptedMessage = encrypt(originalMessage, keyPair.getPublic());
-//
-//            // Decrypt the message using the private key
-//            String decryptedMessage = decrypt(encryptedMessage, keyPair.getPrivate());
-//
-//            // Print the results
-//            System.out.println("Original Message: " + originalMessage);
-//            System.out.println("Encrypted Message: " + bytesToHex(encryptedMessage));
-//            System.out.println("Decrypted Message: " + decryptedMessage);
-//
-//        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-//                 IllegalBlockSizeException | BadPaddingException e) {
-//            e.printStackTrace();
-//        }
-//    }

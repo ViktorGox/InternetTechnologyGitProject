@@ -2,6 +2,12 @@ package Client;
 
 import Server.FileTransfer;
 import Shared.ClientCommand;
+import Shared.EncryptionUtils;
+import Shared.Headers.EncryptedPrivateHeader;
+import Shared.Messages.Encryption.MessageEncPrivateSend;
+import Shared.Messages.Encryption.MessageReqPublicKeyResp;
+import Shared.Messages.Encryption.MessageSessionKeyCreate;
+import Shared.Messages.Encryption.MessageSessionKeyCreateResp;
 import Shared.Messages.JsonMessage;
 import Shared.Messages.JsonMessageExtractor;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.PublicKey;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -19,10 +26,7 @@ public class Client implements OnClientExited {
     private UserInput userInput;
     private EncryptionHandler encryptionHandler;
     private boolean keepListening = true;
-    private boolean guessingGame = false;
     public static final boolean DISPLAY_RAW_DEBUG = true;
-
-    private Map<String, String> sessionKeys;
 
     public static void main(String[] args) {
         new Client().start();
@@ -74,7 +78,85 @@ public class Client implements OnClientExited {
             case "LOGIN_RESP" -> handleEncryption(clientCommand.getMessage());
             case "REQ_PUBLIC_KEY" ->
                     handlePublicKeyRequest(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
+            case "REQ_PUBLIC_KEY_RESP" ->
+                    handlePublicKeyResponse(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
+            case "SESSION_KEY_CREATE" ->
+                    handleSessionKeyCreate(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
+            case "SESSION_KEY_CREATE_RESP" ->
+                    handleSessionKeyCreateResp(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
+            case "ENC_PRIVATE_RECEIVE" ->
+                    handleEncPrivateReceive(JsonMessageExtractor.extractInformation(clientCommand.getMessage()));
         }
+    }
+
+    private void handleSessionKeyCreateResp(Map<String, String> extractInformation) {
+        String awaitingMessage = encryptionHandler.findWaitingUser(extractInformation.get("username"));
+        if (awaitingMessage == null) {
+            //TODO: throw error that ok was received without being asked.
+            return;
+        }
+        byte[] sessionKey = getSessionKey(extractInformation.get("username"));
+
+        String encryptedMessage = encryptionHandler.encryptWithSessionKey(awaitingMessage, sessionKey);
+
+        MessageEncPrivateSend messageBroadcast = new MessageEncPrivateSend(extractInformation.get("username"), encryptedMessage);
+        send(EncryptedPrivateHeader.ENC_PRIVATE_SEND, messageBroadcast);
+
+    }
+
+    private void handleEncPrivateReceive(Map<String, String> extractInformation) {
+        String decrMessage = encryptionHandler.decryptWithSessionKey(extractInformation.get("message"),
+                getSessionKey(extractInformation.get("username")));
+        System.out.println("Received decrpyted message: " + decrMessage);
+    }
+
+    /**
+     * Received encrypted session key.
+     */
+    private void handleSessionKeyCreate(Map<String, String> extractInformation) {
+        try {
+            byte[] decryptedSessionKey = encryptionHandler.decryptWithPrivateKey(
+                    EncryptionUtils.stringByteArrayToByteArray(extractInformation.get("session_key")),
+                    encryptionHandler.getPrivateKey());
+            System.out.println("Adding session key now. Related user: " + extractInformation.get("username"));
+            encryptionHandler.addSessionKey(extractInformation.get("username"), decryptedSessionKey);
+
+            MessageSessionKeyCreateResp messageJson = new MessageSessionKeyCreateResp("OK", extractInformation.get("username"));
+            send(EncryptedPrivateHeader.SESSION_KEY_CREATE_RESP, messageJson);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Received public key from other user.
+     */
+    public void handlePublicKeyResponse(Map<String, String> message) {
+        try {
+            PublicKey otherPublicKey = EncryptionUtils.stringByteArrayToPublicKey(message.get("publicKey"));
+
+            byte[] sessionKey = encryptionHandler.generateRandomKey();
+
+            System.out.println("Adding session key now. Related user: " + message.get("username"));
+            encryptionHandler.addSessionKey(message.get("username"), sessionKey);
+
+            byte[] encryptedSessionKey = encryptionHandler.encryptWithPublicKey(sessionKey, otherPublicKey);
+
+            MessageSessionKeyCreate jsonMessage = new MessageSessionKeyCreate(encryptedSessionKey, message.get("username"));
+            send(EncryptedPrivateHeader.SESSION_KEY_CREATE, jsonMessage);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Return public key
+     */
+    public void handlePublicKeyRequest(Map<String, String> message) {
+        String sender = message.get("username");
+
+        MessageReqPublicKeyResp sendMessage = new MessageReqPublicKeyResp(encryptionHandler.getPublicKey().getEncoded(), sender);
+        send(EncryptedPrivateHeader.REQ_PUBLIC_KEY_RESP, sendMessage);
     }
 
     private void handleFileTransfer(Map<String,String> message) {
@@ -86,15 +168,10 @@ public class Client implements OnClientExited {
     }
 
     private void handleStartGame(String message) {
-        if (!message.contains("OK")){
+        if (!message.contains("OK")) {
             userInput.setJoinedGame(false);
         }
         userInput.setGgStarted(true);
-    }
-
-    public void handlePublicKeyRequest(Map<String, String> message) {
-        String sender = message.get("username");
-        System.out.println(encryptionHandler.getPublicKey());
     }
 
     private void handleEncryption(String message) {
@@ -103,7 +180,7 @@ public class Client implements OnClientExited {
     }
 
     private void handleGuessResponse(String message) {
-        if(message.contains("0")){
+        if (message.contains("0")) {
             userInput.setJoinedGame(false);
         }
         userInput.setResponse(true);
@@ -114,8 +191,8 @@ public class Client implements OnClientExited {
         if (DISPLAY_RAW_DEBUG) System.out.println("Heartbeat Test Successful");
     }
 
-    private void handleJoiningGame(String message){
-        if(message.contains("OK")){
+    private void handleJoiningGame(String message) {
+        if (message.contains("OK")) {
             userInput.setJoinedGame(true);
         }
         userInput.setResponse(true);
@@ -128,17 +205,24 @@ public class Client implements OnClientExited {
         thread.start();
     }
 
-    public String getSessionKey(String username) {
-        return sessionKeys.get(username);
-    }
     @SuppressWarnings("rawtypes")
     public void send(Enum header, JsonMessage message) {
         try {
-            userInput.writer.println(header + message.mapToJson());
+            String jsonMessage = header + message.mapToJson();
+            userInput.writer.println(jsonMessage);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
+
+    public byte[] getSessionKey(String username) {
+        return encryptionHandler.getSessionKey(username);
+    }
+
+    public void addToWaitingList(String username, String message) {
+        encryptionHandler.addWaitingUser(username, message);
+    }
+
     @SuppressWarnings("rawtypes")
     public void send(Enum header) {
         userInput.writer.println(header);
@@ -149,4 +233,7 @@ public class Client implements OnClientExited {
         keepListening = false;
     }
 
+    public EncryptionHandler getEncryptionHandler() {
+        return encryptionHandler;
+    }
 }

@@ -1,15 +1,30 @@
 package Shared.Messages.Encryption;
 
+import Shared.EncryptionUtils;
 import Shared.Messages.JsonMessage;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import java.util.Arrays;
 
 public class MessageReqPublicKeyResp extends JsonMessage {
     @JsonProperty
-    String publicKey;
+    byte[] publicKey;
     @JsonProperty
     String username;
-    public MessageReqPublicKeyResp(@JsonProperty("public_key") String publicKey, @JsonProperty("username") String username) {
+
+    public MessageReqPublicKeyResp(@JsonProperty("publicKey") byte[] publicKey, @JsonProperty("username") String username) {
         this.publicKey = publicKey;
         this.username = username;
+    }
+
+    public MessageReqPublicKeyResp(@JsonProperty("publicKey") String publicKey, @JsonProperty("username") String username) {
+        this.publicKey = EncryptionUtils.stringByteArrayToByteArray(publicKey);
+        this.username = username;
+    }
+
+    @Override
+    public String mapToJson() {
+        return "{\"publicKey\":\"" + Arrays.toString(publicKey) + "\", \"username\":\"" + username + "\"}";
     }
 }

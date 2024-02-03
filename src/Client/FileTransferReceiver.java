@@ -40,6 +40,7 @@ public class FileTransferReceiver extends Thread {
             FileOutputStream fileOutputStream = new FileOutputStream(pathFile);
             DigestInputStream digestInputStream = new DigestInputStream(receiverFile, digest);
             digestInputStream.transferTo(fileOutputStream);
+            fileOutputStream.close();
             byte[] calculatedChecksum = digest.digest();
             System.out.println(Arrays.toString(calculatedChecksum));
             boolean checksumMatch = MessageDigest.isEqual(checkSum, calculatedChecksum);

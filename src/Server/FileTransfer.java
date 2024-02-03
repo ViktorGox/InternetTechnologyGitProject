@@ -42,10 +42,16 @@ public class FileTransfer extends Thread {
 
 
     private void initiateFileTransfer(List<FileTransferClient> fileTransferClientList) {
-        FileTransferClient client1 = fileTransferClientList.get(0);
-        FileTransferClient client2 = fileTransferClientList.get(1);
-        client1.setOtherClient(client2.getSocket());
-        client2.setOtherClient(client1.getSocket());
+        FileTransferClient sender = null;
+        FileTransferClient receiver = null;
+        for (FileTransferClient fileTransferClient: fileTransferClientList){
+            if(fileTransferClient.getRole().equals("s")){
+                sender = fileTransferClient;
+            } else {
+                receiver = fileTransferClient;
+            }
+        }
+        sender.setOtherClient(receiver.getSocket());
     }
 
     public void addClient(UUID uuid, FileTransferClient fileTransferClient){

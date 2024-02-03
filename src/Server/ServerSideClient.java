@@ -327,6 +327,7 @@ public class ServerSideClient implements Runnable {
         if (pingPongInteraction != null) {
             pingPongInteraction.disconnect();
         }
+        Server.getInstance().removeClient(this);
     }
 
     private void commandError() {

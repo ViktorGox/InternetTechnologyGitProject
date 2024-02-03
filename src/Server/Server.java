@@ -1,6 +1,8 @@
 package Server;
 
+import Shared.Headers.ByeHeader;
 import Shared.Messages.JsonMessage;
+import Shared.Messages.MessageLogin;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -68,6 +70,7 @@ public class Server {
 
     public synchronized void removeClient(ServerSideClient serverSideClient) {
         clients.remove(serverSideClient);
+        broadcastAll(ByeHeader.LEFT, new MessageLogin(serverSideClient.getUsername()));
         printClients();
     }
 

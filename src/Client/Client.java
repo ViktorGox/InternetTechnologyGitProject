@@ -132,6 +132,9 @@ public class Client implements OnClientExited {
      * Received public key from other user.
      */
     public void handlePublicKeyResponse(Map<String, String> message) {
+        if(message.containsKey("code")) {
+            return;
+        }
         try {
             PublicKey otherPublicKey = EncryptionUtils.stringByteArrayToPublicKey(message.get("publicKey"));
 
@@ -216,10 +219,16 @@ public class Client implements OnClientExited {
     }
 
     public byte[] getSessionKey(String username) {
+        if(!isLoggedIn()) return null;
         return encryptionHandler.getSessionKey(username);
     }
 
     public void addToWaitingList(String username, String message) {
+        if(!isLoggedIn()) {
+            if (DISPLAY_RAW_DEBUG) System.out.println("Attempting to add to waiting list with uninitialized " +
+                    "encryptionHandler!");
+            return;
+        }
         encryptionHandler.addWaitingUser(username, message);
     }
 
@@ -231,6 +240,10 @@ public class Client implements OnClientExited {
     @Override
     public void onClientExited() {
         keepListening = false;
+    }
+
+    public boolean isLoggedIn() {
+        return encryptionHandler != null;
     }
 
     public EncryptionHandler getEncryptionHandler() {

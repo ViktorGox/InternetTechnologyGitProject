@@ -1,6 +1,5 @@
 package Shared;
 
-import Shared.ClientCommand;
 import Shared.Messages.Broadcast.MessageBroadcast;
 import Shared.Messages.Broadcast.MessageBroadcastRequest;
 import Shared.Messages.Bye.MessageLeft;
@@ -13,30 +12,42 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
+import static Client.Client.DISPLAY_RAW_DEBUG;
+
 public class MessageFactory {
     private static <T> JsonMessage convertToBasicVersion(String messageAsJson, Class<T> messageType) {
+        if(messageAsJson == null || messageAsJson.isBlank()) {
+            if (DISPLAY_RAW_DEBUG) System.out.println("Json parsing failed.");
+            return new MessageError("0");
+        }
         ObjectMapper mapper = new ObjectMapper();
         System.out.println("MessageFactory / convertToBasicVersion: Received message: " + messageAsJson +
                 ". Converting to class: " + messageType);
         try {
             return (JsonMessage) mapper.readValue(messageAsJson, messageType);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            return null;
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            if (DISPLAY_RAW_DEBUG) System.out.println("Json parsing failed.");
+            return new MessageError("0");
         }
     }
 
     public static JsonMessage convertToMessageClass(ClientCommand received) {
-        System.out.println("(convertToMessageClass) received this: " + received);
-        if (received.getMessage() == null) {
-            System.out.println("(convertToMessageClass) Message is: " + received.getMessage());
-            return null;
+        if (DISPLAY_RAW_DEBUG) System.out.println("(convertToMessageClass) received this: " + received);
+
+        if (received.getCommandAsEnum() == null) {
+            return new MessageError("1");
         }
-        Map<String, String> message = JsonMessageExtractor.extractInformation(received.getMessage());
-        if (message.get("status") != null) { //TODO: or error. PongError
-            return handleOther(received);
+
+        Map<String, String> message = null;
+        if (received.getMessage() != null) {
+            try {
+                message = JsonMessageExtractor.extractInformation(received.getMessage());
+            } catch(IllegalArgumentException | JsonExtractorError e) {
+                return new MessageError("0");
+            }
+            if (message.get("status") != null) { //TODO: or error. PongError
+                return handleOther(received);
+            }
         }
 
         System.out.println("MessageFactory switching enums: " + received.getCommandAsEnum().name());
@@ -98,29 +109,32 @@ public class MessageFactory {
                 return null;
             }
         }
-        System.out.println("MessageFactory failed.");
-        //TODO: Handle Invalid header + body
-        throw new RuntimeException("Failed to find header in the MessageFactory. Header: " + received.getCommandAsEnum());
+        if (DISPLAY_RAW_DEBUG) System.out.println("MessageFactory failed.");
+        return new MessageError("1");
     }
 
     private static JsonMessage handleOther(ClientCommand clientCommand) {
         System.out.println("(MessageFactory) Handling other. " + clientCommand);
 
-        switch (clientCommand.getCommandAsEnum().name()) {
-            case "SESSION_KEY_CREATE_RESP" -> {
-                return convertToBasicVersion(clientCommand.getMessage(), MessageSessionKeyCreateResp.class);
-            }
+        if ("SESSION_KEY_CREATE_RESP".equals(clientCommand.getCommandAsEnum().name())) {
+            return convertToBasicVersion(clientCommand.getMessage(), MessageSessionKeyCreateResp.class);
         }
 
-        Map<String, String> mapped = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
-        if(mapped.get("status") != null && mapped.get("code") == null) {
+        Map<String, String> mapped;
+
+        try {
+            mapped = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
+        } catch(IllegalArgumentException | JsonExtractorError e) {
+            return new MessageError("0");
+        }
+        if (mapped.get("status") != null && mapped.get("code") == null) {
             return new MessageGoodStatus();
         }
-        if(mapped.get("status") != null && mapped.get("code") != null) {
+        if (mapped.get("status") != null && mapped.get("code") != null) {
             return new MessageError(mapped.get("code"));
         }
 
-        System.out.println("MessageFactory failed while handling other.");
-        throw new RuntimeException("Failed to find header in the MessageFactory. Header: " + clientCommand.getCommandAsEnum());
+        if (DISPLAY_RAW_DEBUG) System.out.println("MessageFactory failed while handling other.");
+        return new MessageError("1");
     }
 }

@@ -10,10 +10,11 @@ public class ClientCommand {
         if(indexOfJSON != -1) {
             header = EnumConverter.GroupedEnum.fromString(unsplitRawMessage.substring(0, indexOfJSON).trim());
             message = unsplitRawMessage.substring(indexOfJSON).trim();
-            return;
         }
-        header = EnumConverter.GroupedEnum.fromString(unsplitRawMessage.trim());
-        message = null;
+        else {
+            header = EnumConverter.GroupedEnum.fromString(unsplitRawMessage.trim());
+            message = null;
+        }
     }
 
     public String getCommand() {

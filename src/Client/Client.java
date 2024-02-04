@@ -3,6 +3,7 @@ package Client;
 import Shared.ClientCommand;
 import Shared.EncryptionUtils;
 import Shared.Headers.EncryptedPrivateHeader;
+import Shared.Headers.OtherHeader;
 import Shared.MessageFactory;
 import Shared.Messages.Bye.MessageLeft;
 import Shared.Messages.Encryption.*;
@@ -60,6 +61,17 @@ public class Client implements OnClientExited {
         if (DISPLAY_RAW_DEBUG) System.out.println(clientCommand);
 
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
+        // Parse or unknown command error handling.
+        if(createdMessage instanceof MessageError) {
+            if(((MessageError) createdMessage).getCode().equals("0")) {
+                System.out.println("Failed to parse the given data to json.");
+            }
+            if(((MessageError) createdMessage).getCode().equals("1")) {
+                System.out.println("Failed to find a command with the given header.");
+            }
+            return;
+        }
+
         if (DISPLAY_RAW_DEBUG) System.out.println("Handling: " + createdMessage);
         switch (clientCommand.getCommand()) {
             case "PING" -> handlePingPong();

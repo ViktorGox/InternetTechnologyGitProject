@@ -57,13 +57,4 @@ public class JsonMessageExtractor {
         }
         return value;
     }
-
-    public static String extractInformationFromServer(String jsonMessage) {
-        Map<String, String> values = extractInformation(jsonMessage);
-        StringBuilder stringBuilder = new StringBuilder();
-        for (String value : values.values()) {
-            stringBuilder.append(isError(value)).append(" ");
-        }
-        return stringBuilder.toString();
-    }
 }

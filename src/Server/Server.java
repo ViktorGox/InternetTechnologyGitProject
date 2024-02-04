@@ -2,6 +2,7 @@ package Server;
 
 import Shared.Headers.ByeHeader;
 import Shared.Headers.LoginHeader;
+import Shared.Headers.OtherHeader;
 import Shared.Messages.JsonMessage;
 import Shared.Messages.MessageJoined;
 import Shared.Messages.MessageLogin;
@@ -15,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class Server {
-    public final boolean PERFORM_PING_PONG = false;
+    public final boolean PERFORM_PING_PONG = true;
     private static Server instance;
 
     public static Server getInstance() {

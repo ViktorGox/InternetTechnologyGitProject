@@ -68,6 +68,7 @@ class SingleUserTests {
         out.println("LOGIN {\"}");
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
+        System.out.println(serverResponse);
         PARSE_ERROR parseError = Utils.messageToObject(serverResponse);
         assertNotNull(parseError);
     }

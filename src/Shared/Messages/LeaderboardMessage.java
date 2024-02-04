@@ -23,7 +23,7 @@ public class LeaderboardMessage extends JsonMessage {
         int index = 1;
         for (Map.Entry<String, Long> entry : leaderboard.entrySet()) {
             sb.append(index).append(". ")
-                    .append(entry.getKey()).append("-").append(entry.getValue()).append(" ms\n");
+                    .append(entry.getKey()).append("-").append(entry.getValue()).append(" seconds\n");
             index++;
         }
         return sb.toString();

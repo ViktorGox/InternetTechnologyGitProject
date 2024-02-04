@@ -90,6 +90,7 @@ public class Client implements OnClientExited {
     private void handleGuessEnd(JsonMessage message) {
         System.out.println(message.toString());
         userInput.setJoinedGame(false);
+        userInput.setResponse(true);
     }
 
     private void handleLeft(JsonMessage jsonMessage) {
@@ -206,6 +207,9 @@ public class Client implements OnClientExited {
     private void handleGuessResponse(JsonMessage jsonMessage) {
         MessageGuess message = (MessageGuess) jsonMessage;
         System.out.println(message.toString());
+        if(((MessageGuess) jsonMessage).getGuess().equals("0")){
+            userInput.setJoinedGame(false);
+        }
 
         userInput.setResponse(true);
     }

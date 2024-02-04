@@ -1,4 +1,4 @@
 package protocol.messages;
 
-public record UserListError (String status, int error){
+public record UserListError (String status, int code){
 }

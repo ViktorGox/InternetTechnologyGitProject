@@ -9,14 +9,13 @@ import protocol.utils.Utils;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
-public class UserList {
+public class UserListTest {
     private static Properties props = new Properties();
 
     private Socket socketUser1, socketUser2;
@@ -27,7 +26,7 @@ public class UserList {
 
     @BeforeAll
     static void setupAll() throws IOException {
-        InputStream in = UserList.class.getResourceAsStream("testconfig.properties");
+        InputStream in = UserListTest.class.getResourceAsStream("testconfig.properties");
         props.load(in);
         in.close();
     }
@@ -59,12 +58,12 @@ public class UserList {
         outUser1.flush();
 
         String error = receiveLineWithTimeout(inUser1);
-        UserListError userListResp = Utils.messageToObject(error);
-        assertEquals(new UserListError("ERROR", 2000), userListResp);
+        UserListResp userListResp = Utils.messageToObject(error);
+        assertEquals(2000, userListResp.code());
     }
 
     @Test
-    void broadcastPrivateMessageSendsMessageToReceiver() throws JsonProcessingException {
+    void userListReturnsCorrectUserList() throws JsonProcessingException {
         receiveLineWithTimeout(inUser1); //welcome message
         receiveLineWithTimeout(inUser2); //welcome message
 
@@ -76,16 +75,19 @@ public class UserList {
         // Connect using same username
         outUser2.println(Utils.objectToMessage(new Login("user2")));
         outUser2.flush();
-        receiveLineWithTimeout(inUser2);
+        receiveLineWithTimeout(inUser2); //OK
+        receiveLineWithTimeout(inUser1); // User 2 Joined
 
         //Send message to user2
-        outUser1.println(Utils.objectToMessage(new PrivateSend("user2", "bla")));
+        outUser1.println(Utils.objectToMessage(new UserList()));
         outUser1.flush();
-        receiveLineWithTimeout(inUser1); //OK
 
-        String resUser2 = receiveLineWithTimeout(inUser2);
-        PrivateReceive privateReceive = Utils.messageToObject(resUser2);
-        assertEquals(new PrivateReceive("user1", "bla"), privateReceive);
+        String list = receiveLineWithTimeout(inUser1); //OK
+        UserListResp receivedList = Utils.messageToObject(list);
+        ArrayList<String> users = new ArrayList<>();
+        users.add("user2");
+        users.add("user1");
+        assertEquals(users, receivedList.users());
     }
 
     private String receiveLineWithTimeout(BufferedReader reader) {

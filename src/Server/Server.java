@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class Server {
@@ -160,7 +162,10 @@ public class Server {
         }
         receiverClient.sendToClient(header, message);
     }
-    public Set<ServerSideClient> getClients() {
-        return clients;
+
+    public List<String> getClients() {
+        return clients.stream().map(serverSideClient -> serverSideClient.getUsername())
+                .filter(Objects::nonNull)
+                .toList();
     }
 }

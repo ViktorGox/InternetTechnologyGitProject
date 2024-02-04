@@ -1,15 +1,18 @@
 package Shared.Messages;
 
 import Server.ServerSideClient;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Set;
 
 public class MessageUserList extends JsonMessage{
     @JsonProperty
-    Set<ServerSideClient> serverSideClients;
+    List<String> users;
 
-    public MessageUserList(Set<ServerSideClient> serverSideClients) {
-        this.serverSideClients = serverSideClients;
+    @JsonCreator
+    public MessageUserList(@JsonProperty("users") List<String> serverSideClients) {
+        this.users = serverSideClients;
     }
 }

@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class Server {
-    public final boolean PERFORM_PING_PONG = true;
+    public final boolean PERFORM_PING_PONG = false;
     private static Server instance;
 
     public static Server getInstance() {

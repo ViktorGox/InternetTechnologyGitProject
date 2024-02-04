@@ -207,15 +207,11 @@ public class UserInput implements Runnable {
     }
 
     private void encryptedPrivateMessage() {
-        if (!client.isLoggedIn()) {
-            System.out.println("You must be logged in to send an encrypted message: ");
-            return;
-        }
-
         System.out.println("Enter receiver:");
         String receiver = inputScanner.nextLine();
         System.out.println("Enter your message: ");
         String message = inputScanner.nextLine();
+
 
         byte[] sessionKey = client.getSessionKey(receiver);
 

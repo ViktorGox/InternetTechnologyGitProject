@@ -58,6 +58,7 @@ public class Client implements OnClientExited {
     }
 
     private void handleReceived(ClientCommand clientCommand) {
+        System.out.println(clientCommand);
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
         // Parse or unknown command error handling.
         if(createdMessage instanceof MessageError) {
@@ -90,7 +91,7 @@ public class Client implements OnClientExited {
 
     private void handleLeft(JsonMessage jsonMessage) {
         MessageLeft message = (MessageLeft) jsonMessage;
-        System.out.println(message);
+        System.out.println(message.getUsername() + " left.");
     }
 
     private void handleSessionKeyCreateResp(JsonMessage jsonMessage) {
@@ -110,9 +111,8 @@ public class Client implements OnClientExited {
     }
 
     private void handleEncPrivateReceive(JsonMessage jsonMessage) {
-
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
-
+        System.out.println("PRIVATE "+jsonMessage);
         String decrMessage = encryptionHandler.decryptWithSessionKey(message.getMessage(),
                 getSessionKey(message.getUsername()));
 

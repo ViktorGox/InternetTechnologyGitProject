@@ -29,6 +29,7 @@ public class PingPongInteraction implements Runnable {
             }
             if (!responded) {
                 System.out.println("Did not receive an answer. Closing connection.");
+                client.sendToClient(PingPongHeader.DSCN);
                 client.closeSocket();
                 return;
             }

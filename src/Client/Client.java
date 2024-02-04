@@ -58,8 +58,6 @@ public class Client implements OnClientExited {
     }
 
     private void handleReceived(ClientCommand clientCommand) {
-        if (DISPLAY_RAW_DEBUG) System.out.println(clientCommand);
-
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
         // Parse or unknown command error handling.
         if(createdMessage instanceof MessageError) {
@@ -72,7 +70,6 @@ public class Client implements OnClientExited {
             return;
         }
 
-        if (DISPLAY_RAW_DEBUG) System.out.println("Handling: " + createdMessage);
         switch (clientCommand.getCommand()) {
             case "PING" -> handlePingPong();
             case "FILE_TRF" -> userInput.handleFireTransfer(createdMessage);
@@ -92,22 +89,15 @@ public class Client implements OnClientExited {
     }
 
     private void handleLeft(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageLeft)) System.out.println("handleLeft conversion failed");
         MessageLeft message = (MessageLeft) jsonMessage;
-
-        if (encryptionHandler.removeSessionKey(message.getUsername())) {
-            if (DISPLAY_RAW_DEBUG) System.out.println("Removed session key for user.");
-        }
+        System.out.println(message);
     }
 
     private void handleSessionKeyCreateResp(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageSessionKeyCreateResp))
-            System.out.println("handleSessionKeyCreateResp conversion failed");
         MessageSessionKeyCreateResp message = (MessageSessionKeyCreateResp) jsonMessage;
 
         String awaitingMessage = encryptionHandler.findWaitingUser(message.getUsername());
         if (awaitingMessage == null) {
-            //TODO: throw error that ok was received without being asked.
             return;
         }
         byte[] sessionKey = getSessionKey(message.getUsername());
@@ -120,29 +110,25 @@ public class Client implements OnClientExited {
     }
 
     private void handleEncPrivateReceive(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageEncPrivateSend))
-            System.out.println("handleEncPrivateReceive conversion failed");
+
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
 
         String decrMessage = encryptionHandler.decryptWithSessionKey(message.getMessage(),
                 getSessionKey(message.getUsername()));
 
-        if (DISPLAY_RAW_DEBUG) System.out.println("Decrypted received message: " + decrMessage);
+        System.out.println("Decrypted received message: " + decrMessage);
     }
 
     /**
      * Received encrypted session key.
      */
     private void handleSessionKeyCreate(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageSessionKeyCreate))
-            System.out.println("handleSessionKeyCreate conversion failed");
         MessageSessionKeyCreate message = (MessageSessionKeyCreate) jsonMessage;
 
         try {
             byte[] decryptedSessionKey = encryptionHandler.decryptWithPrivateKey(
                     EncryptionUtils.stringByteArrayToByteArray(message.getSessionKey()),
                     encryptionHandler.getPrivateKey());
-            System.out.println("Adding session key now. Related user: " + message.getUsername());
             encryptionHandler.addSessionKey(message.getUsername(), decryptedSessionKey);
 
             MessageSessionKeyCreateResp messageJson = new MessageSessionKeyCreateResp("OK", message.getUsername());
@@ -156,9 +142,9 @@ public class Client implements OnClientExited {
      * Received public key from other user.
      */
     public void handlePublicKeyResponse(JsonMessage jsonMessage) {
-        // TODO: handle if code is present ?
-        if (!(jsonMessage instanceof MessageReqPublicKeyResp))
-            System.out.println("handlePublicKeyResponse conversion failed");
+        if ((jsonMessage instanceof MessageError)) {
+            return;
+        }
         MessageReqPublicKeyResp message = (MessageReqPublicKeyResp) jsonMessage;
 
         try {
@@ -166,7 +152,6 @@ public class Client implements OnClientExited {
 
             byte[] sessionKey = encryptionHandler.generateRandomKey();
 
-            System.out.println("Adding session key now. Related user: " + message.getUsername());
             encryptionHandler.addSessionKey(message.getUsername(), sessionKey);
 
             byte[] encryptedSessionKey = encryptionHandler.encryptWithPublicKey(sessionKey, otherPublicKey);
@@ -182,8 +167,7 @@ public class Client implements OnClientExited {
      * Return public key
      */
     public void handlePublicKeyRequest(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageReqPublicKey))
-            System.out.println("handlePublicKeyRequest conversion failed");
+
         MessageReqPublicKey message = (MessageReqPublicKey) jsonMessage;
 
         String sender = message.getUsername();
@@ -193,8 +177,6 @@ public class Client implements OnClientExited {
     }
 
     private void handleFileTransferAnswer(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageFileTrfAnswer))
-            System.out.println("handleFileTransferAnswer conversion failed");
         MessageFileTrfAnswer message = (MessageFileTrfAnswer) jsonMessage;
 
         if (message.getAnswer().equals("true")) {
@@ -218,7 +200,6 @@ public class Client implements OnClientExited {
     }
 
     private void handleGuessResponse(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageGuess)) System.out.println("handleFileTransfer conversion failed");
         MessageGuess message = (MessageGuess) jsonMessage;
 
         if (message.getGuess().equals("0")) {
@@ -229,7 +210,6 @@ public class Client implements OnClientExited {
 
     private void handlePingPong() {
         userInput.writer.println("PONG");
-        if (DISPLAY_RAW_DEBUG) System.out.println("Heartbeat Test Successful");
     }
 
     private void handleJoiningGame(JsonMessage jsonMessage) {
@@ -263,8 +243,6 @@ public class Client implements OnClientExited {
 
     public void addToWaitingList(String username, String message) {
         if (!isLoggedIn()) {
-            if (DISPLAY_RAW_DEBUG) System.out.println("Attempting to add to waiting list with uninitialized " +
-                    "encryptionHandler!");
             return;
         }
         encryptionHandler.addWaitingUser(username, message);

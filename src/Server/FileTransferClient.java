@@ -31,7 +31,6 @@ public class FileTransferClient extends Thread {
     }
 
     private void waitForUUID() throws IOException {
-        System.out.println("Waiting for UUID");
         byte[] uuidBytes = new byte[36];
         byte[] roleBytes = new byte[1];
 
@@ -42,13 +41,9 @@ public class FileTransferClient extends Thread {
         String receivedUUID = new String(uuidBytes);
         String receivedRole = new String(roleBytes);
         role = receivedRole;
-        System.out.println(receivedRole);
 
         if (isValidUUID(receivedUUID)) {
-            System.out.println("Received valid UUID: " + receivedUUID);
             FileTransfer.getInstance().addClient(UUID.fromString(receivedUUID), this);
-        } else {
-            System.out.println("Received invalid UUID: " + receivedUUID);
         }
     }
 

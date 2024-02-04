@@ -31,7 +31,6 @@ public class FileTransfer extends Thread {
         while (true){
             try {
                 Socket socket = transferSocket.accept();
-                System.out.println("TRANSFER CLIENT +1");
                 FileTransferClient client = new FileTransferClient(socket);
                 client.start();
             } catch (IOException e) {

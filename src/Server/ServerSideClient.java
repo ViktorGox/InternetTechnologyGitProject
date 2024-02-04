@@ -67,7 +67,6 @@ public class ServerSideClient implements Runnable {
     }
 
     public void determineAction(ClientCommand clientCommand) {
-        if(DISPLAY_RAW_DEBUG) System.out.println(clientCommand);
         if(clientCommand.getCommandAsEnum() == null) {
             sendToClient(OtherHeader.UNKNOWN_COMMAND);
             return;
@@ -84,7 +83,6 @@ public class ServerSideClient implements Runnable {
             return;
         }
 
-        if(DISPLAY_RAW_DEBUG) System.out.println("Handling: " + createdMessage);
         switch (clientCommand.getCommand()) {
             case "LOGIN" -> commandLogIn(createdMessage);
             case "BROADCAST_REQ" -> commandBroadcastReq(createdMessage);
@@ -108,7 +106,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandSessionKeyCreateResp(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageSessionKeyCreateResp)) System.out.println("SessionKeyCreateResp conversion failed");
         MessageSessionKeyCreateResp message = (MessageSessionKeyCreateResp) jsonMessage;
 
         MessageSessionKeyCreateResp messageJson = new MessageSessionKeyCreateResp("OK", this.username);
@@ -116,7 +113,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandEncPrivateSend(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageEncPrivateSend)) System.out.println("EncPrivateSend conversion failed");
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
 
 
@@ -125,7 +121,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandSessionKeyCreate(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageSessionKeyCreate)) System.out.println("SessionKeyCreate conversion failed");
         MessageSessionKeyCreate message = (MessageSessionKeyCreate) jsonMessage;
 
         MessageSessionKeyCreate returnMessage = new MessageSessionKeyCreate(message.getSessionKey(), this.username);
@@ -136,7 +131,6 @@ public class ServerSideClient implements Runnable {
      * Received public key from client.
      */
     private void commandReqPublicKeyResp(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageReqPublicKeyResp)) System.out.println("ReqPublicKeyResp conversion failed");
         MessageReqPublicKeyResp message = (MessageReqPublicKeyResp) jsonMessage;
 
         this.publicKey = EncryptionUtils.stringByteArrayToPublicKey(message.getPublicKey());
@@ -146,7 +140,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandReqPublicKey(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageReqPublicKey)) System.out.println("ReqPublicKey conversion failed.");
         MessageReqPublicKey message = (MessageReqPublicKey) jsonMessage;
 
         if (username == null) {
@@ -187,7 +180,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandFileTransferAnswer(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageFileTrfAnswer)) System.out.println("FileTransferAsnwer conversion failed");
         MessageFileTrfAnswer message = (MessageFileTrfAnswer) jsonMessage;
 
         String answer = message.getAnswer();
@@ -196,8 +188,7 @@ public class ServerSideClient implements Runnable {
 
         ServerSideClient senderReceiver = Server.getInstance().getUser(sender);
         if (senderReceiver == null) {
-            //TODO: add some error?
-            this.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, new MessageError("??????"));
+            this.sendToClient(FileTransferHeader.FILE_TRF_ANSWER, new MessageError("3001"));
             return;
         }
 
@@ -207,7 +198,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandFileTransfer(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageFileTransfer)) System.out.println("FileTransfer conversion failed.");
         MessageFileTransfer message = (MessageFileTransfer) jsonMessage;
 
         String receiver = message.getUsername();
@@ -235,11 +225,8 @@ public class ServerSideClient implements Runnable {
     }
 
     private void pong() {
-        System.out.println("Received Pong!");
         if (pingPongInteraction != null) {
-            System.out.println("Notifying that Pong was received.");
             if(pingPongInteraction.pingState()) {
-                if(DISPLAY_RAW_DEBUG) System.out.println("PONG WIHTOUT PING");
                 sendToClient(PingPongHeader.PONG_ERROR, new MessageStatuslessError("8000"));
             }
             pingPongInteraction.receivedPong();
@@ -249,8 +236,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandLogIn(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageLogin)) System.out.println("ServerSideClient from command Log in says: " +
-                "??????? fr fr");
         MessageLogin message = (MessageLogin) jsonMessage;
         JsonMessage finalMessage;
         if(message == null){
@@ -281,8 +266,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandPrivateSend(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessagePrivateSend))
-            System.out.println("ServerSideClient from Private Send says: ???????");
         MessagePrivateSend message = (MessagePrivateSend) jsonMessage;
 
         String receiver = message.getUsername();
@@ -309,7 +292,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandBroadcastReq(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageBroadcastRequest)) System.out.println("commandBroadcastReq conversio nfailed");
         MessageBroadcastRequest message = (MessageBroadcastRequest) jsonMessage;
         String messageS = message.getMessage();
 
@@ -341,8 +323,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandGGJoin(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageJoined))
-            System.out.println("commandGGJoin failed");
         MessageJoined message = (MessageJoined) jsonMessage;
 
         JsonMessage messageToSend;
@@ -360,8 +340,6 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandGG_Guess(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageGuess))
-            System.out.println("commandGG_Guess failed");
         MessageGuess message = (MessageGuess) jsonMessage;
 
         JsonMessage messageToSend;

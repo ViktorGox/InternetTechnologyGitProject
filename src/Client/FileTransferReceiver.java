@@ -32,17 +32,14 @@ public class FileTransferReceiver extends Thread {
             InputStream receiverInputStream = socket.getInputStream();
             byte[] confirmation = new byte[5];
             receiverInputStream.read(confirmation);
-            System.out.println("DOWNLOAD IS STARTING");
             byte[] checkSum = new byte[32];
             receiverInputStream.read(checkSum);
-            System.out.println(Arrays.toString(checkSum));
             InputStream receiverFile = socket.getInputStream();
             FileOutputStream fileOutputStream = new FileOutputStream(pathFile);
             DigestInputStream digestInputStream = new DigestInputStream(receiverFile, digest);
             digestInputStream.transferTo(fileOutputStream);
             fileOutputStream.close();
             byte[] calculatedChecksum = digest.digest();
-            System.out.println(Arrays.toString(calculatedChecksum));
             boolean checksumMatch = MessageDigest.isEqual(checkSum, calculatedChecksum);
             if (checksumMatch) {
                 System.out.println("Checksum verification successful. File received and saved at: " + pathFile);

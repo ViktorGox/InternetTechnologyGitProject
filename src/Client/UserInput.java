@@ -239,7 +239,6 @@ public class UserInput implements Runnable {
     }
 
     protected void handleFireTransfer(JsonMessage jsonMessage) {
-        if (!(jsonMessage instanceof MessageFileTransfer)) System.out.println("handleFireTransfer conversion failed");
         MessageFileTransfer message = (MessageFileTransfer) jsonMessage;
 
         fileName = message.getFileName();
@@ -255,8 +254,6 @@ public class UserInput implements Runnable {
     }
 
     private void handleFileTransferAnswer(String input) {
-        if (DISPLAY_RAW_DEBUG) System.out.println("Handling file transfer answer.");
-        if (DISPLAY_RAW_DEBUG) System.out.println("Line -> " + fileTransferReceiver);
         switch (input.toUpperCase()) {
             case "A" -> answerFileTransfer(fileTransferReceiver, true);
             case "R" -> answerFileTransfer(fileTransferReceiver, false);

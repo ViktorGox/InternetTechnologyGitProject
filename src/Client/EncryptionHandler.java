@@ -64,12 +64,10 @@ public class EncryptionHandler {
 
     public byte[] getSessionKey(String username) {
         sessionKeys.forEach((key, value) -> {
-            System.out.println(key + " <-> " + value);
         });
         return sessionKeys.get(username);
     }
     public void addSessionKey(String username, byte[] sessionKey) {
-        System.out.println("Adding a key for: " + username + ". Key is: " + sessionKey);
         sessionKeys.put(username, sessionKey);
     }
     public boolean removeSessionKey(String username) {

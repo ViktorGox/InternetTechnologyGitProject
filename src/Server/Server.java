@@ -69,13 +69,8 @@ public class Server {
         }
     }
 
-    private void handleFileTransferClient() {
-
-    }
-
     public synchronized void removeClient(ServerSideClient serverSideClient) {
         clients.remove(serverSideClient);
-        //TODO: NOT HERE, IN LOG OUT!!!! THIS CRASHES
         broadcastAll(ByeHeader.LEFT, new MessageLogin(serverSideClient.getUsername()));
         printClients();
     }
@@ -157,7 +152,6 @@ public class Server {
         System.out.println("Broadcasting " + message);
         ServerSideClient receiverClient = getUser(receiver);
         if (receiverClient == null) {
-            //TODO: return user not found.
             return;
         }
         receiverClient.sendToClient(header, message);

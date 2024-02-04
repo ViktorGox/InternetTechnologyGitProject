@@ -35,8 +35,4 @@ public class EnumConverter {
             return null;
         }
     }
-
-    public static void processEnum(Enum<?> enumValue) {
-        System.out.println("Processing: " + enumValue);
-    }
 }

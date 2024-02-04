@@ -29,8 +29,6 @@ public class GuessGame extends Thread {
 
     private void startStartTime() {
         startTimer = new Timer();
-        System.out.println("GAME CREATED");
-
         startTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -42,7 +40,6 @@ public class GuessGame extends Thread {
 
 
     private void handleStartCompletion() {
-        System.out.println("TIMER ENDED");
         JsonMessage jsonMessage;
         if (gamers.size() < 2) {
             jsonMessage = new MessageError("8004");
@@ -56,7 +53,6 @@ public class GuessGame extends Thread {
     }
 
     private void startGameTimer() {
-        System.out.println("GAME HAS STARTED");
         gameTimer = new Timer();
         gameStartTime = System.currentTimeMillis();
         gameTimer.schedule(new TimerTask() {

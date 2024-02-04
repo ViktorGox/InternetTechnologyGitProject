@@ -22,12 +22,10 @@ public class FileTransferSender extends Thread {
             socket.getOutputStream().write("s".getBytes());
             socket.getOutputStream().flush();
             socket.getInputStream().read();
-            System.out.println("STARTING TRANSFER NOW");
             FileInputStream fileInputStream = new FileInputStream(path);
             OutputStream outputStream = socket.getOutputStream();
             fileInputStream.transferTo(outputStream);
             outputStream.close();
-            System.out.println("STOPPED TRANSFER");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

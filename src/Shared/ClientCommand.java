@@ -18,12 +18,10 @@ public class ClientCommand {
     }
 
     public String getCommand() {
-        //TODO: FIx
         return header.toString();
     }
 
-
-    public Enum getCommandAsEnum() {
+    public Enum<?> getCommandAsEnum() {
         return header;
     }
 

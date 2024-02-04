@@ -6,9 +6,9 @@ import java.util.Map;
 
 public class LeaderboardMessage extends JsonMessage {
     @JsonProperty
-    private Map<String, Long> leaderbaord;
+    private Map<String, Long> leaderboard;
 
-    public LeaderboardMessage(@JsonProperty("leaderboard") Map<String, Long> leaderbaord) {
-        this.leaderbaord = leaderbaord;
+    public LeaderboardMessage(@JsonProperty("leaderboard") Map<String, Long> leaderboard) {
+        this.leaderboard = leaderboard;
     }
 }

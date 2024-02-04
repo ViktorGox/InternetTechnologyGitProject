@@ -28,7 +28,15 @@ public class Utils {
         objToNameMapping.put(PrivateReceive.class, "PRIVATE_RECEIVE");
         objToNameMapping.put(UserList.class, "USER_LIST");
         objToNameMapping.put(UserListResp.class, "USER_LIST_RESP");
-        objToNameMapping.put(UserListError.class, "USER_LIST_RESP");
+        objToNameMapping.put(GG_Create.class, "GG_CREATE");
+        objToNameMapping.put(GG_Create_Resp.class, "GG_CREATE_RESP");
+        objToNameMapping.put(GG_Guess.class, "GG_GUESS");
+        objToNameMapping.put(GG_GuessEnd.class, "GG_GUESS_END");
+        objToNameMapping.put(GG_GuessResp.class, "GG_GUESS_RESP");
+        objToNameMapping.put(GG_GuessStart.class, "GG_GUESS_START");
+        objToNameMapping.put(GG_Invitation.class, "GG_INVITATION");
+        objToNameMapping.put(GG_Join.class, "GG_JOIN");
+        objToNameMapping.put(GG_Join_Resp.class, "GG_JOIN_RESP");
     }
 
     public static String objectToMessage(Object object) throws JsonProcessingException {

@@ -42,7 +42,7 @@ public class MessageFactory {
         if (received.getMessage() != null) {
             try {
                 message = JsonMessageExtractor.extractInformation(received.getMessage());
-            } catch(IllegalArgumentException e) {
+            } catch(IllegalArgumentException | JsonExtractorError e) {
                 return new MessageError("0");
             }
             if (message.get("status") != null) { //TODO: or error. PongError
@@ -124,7 +124,7 @@ public class MessageFactory {
 
         try {
             mapped = JsonMessageExtractor.extractInformation(clientCommand.getMessage());
-        } catch(IllegalArgumentException e) {
+        } catch(IllegalArgumentException | JsonExtractorError e) {
             return new MessageError("0");
         }
         if (mapped.get("status") != null && mapped.get("code") == null) {

@@ -62,15 +62,16 @@ class SingleUserTests {
         assertEquals("OK", loginResp.status());
     }
 
-    //@Test
-//    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
-//        receiveLineWithTimeout(in); //welcome message
-//        out.println("LOGIN {\"}");
-//        out.flush();
-//        String serverResponse = receiveLineWithTimeout(in);
-//        PARSE_ERROR parseError = Utils.messageToObject(serverResponse);
-//        assertNotNull(parseError);
-//    }
+    @Test
+    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
+        receiveLineWithTimeout(in); //welcome message
+        out.println("LOGIN {\"}");
+        out.flush();
+        String serverResponse = receiveLineWithTimeout(in);
+        System.out.println(serverResponse);
+        PARSE_ERROR parseError = Utils.messageToObject(serverResponse);
+        assertNotNull(parseError);
+    }
 
     @Test
     void TC5_4_emptyJsonMessageReturnsError() throws JsonProcessingException {

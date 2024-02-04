@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Server {
-    public final boolean PERFORM_PING_PONG = false;
+    public final boolean PERFORM_PING_PONG = true;
     private static Server instance;
 
     public static Server getInstance() {

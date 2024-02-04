@@ -252,7 +252,7 @@ public class Client implements OnClientExited {
     public void send(Enum header, JsonMessage message) {
         try {
             String jsonMessage = header + message.mapToJson();
-            userInput.writer.println("");
+            userInput.writer.println(jsonMessage);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

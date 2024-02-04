@@ -33,7 +33,6 @@ public class PingPongInteraction implements Runnable {
                 client.closeSocket();
                 return;
             }
-            if (Client.DISPLAY_RAW_DEBUG) System.out.println("Receive an answer. Repeating.");
         }
     }
 

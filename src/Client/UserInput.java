@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.UUID;
 
-import static Client.Client.DISPLAY_RAW_DEBUG;
 import static Server.ServerSideClient.VALID_USERNAME_REGEX;
 
 public class UserInput implements Runnable {
@@ -44,7 +43,7 @@ public class UserInput implements Runnable {
             6: Create a Guessing Game
             7: Join a Guessing Game
             8: User List
-            X: Logout
+            0: Logout
             ?: This menu
             Q: Quit
             """;
@@ -158,7 +157,8 @@ public class UserInput implements Runnable {
     }
 
     private void waitForGameResponse() {
-        while (!response) {
+        while (!response && !terminate) {
+            System.out.println("Waiting");
             Thread.onSpinWait();
         }
         response = false;

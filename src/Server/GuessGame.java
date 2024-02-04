@@ -61,7 +61,7 @@ public class GuessGame extends Thread {
                 handleGameCompletion();
                 stopTimer(gameTimer);
             }
-        }, 1200);
+        }, 12000);
     }
 
     private void handleGameCompletion() {

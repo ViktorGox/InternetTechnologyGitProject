@@ -3,7 +3,6 @@ package Client;
 import Shared.ClientCommand;
 import Shared.EncryptionUtils;
 import Shared.Headers.EncryptedPrivateHeader;
-import Shared.Headers.OtherHeader;
 import Shared.MessageFactory;
 import Shared.Messages.Bye.MessageLeft;
 import Shared.Messages.Encryption.*;
@@ -16,8 +15,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.PublicKey;
-import java.util.List;
-import java.util.Map;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
@@ -40,12 +37,14 @@ public class Client implements OnClientExited {
             userInput.addListener(this);
         } catch (IOException e) {
             System.err.println("Failed to connect to server.");
-            throw new RuntimeException(e);
+        } finally {
+            System.out.println("Lost connection with the server.");
         }
     }
 
     public void start() {
         try {
+            if (userInput == null) return;
             while (keepListening) {
                 String received = userInput.reader.readLine();
                 if (received == null) continue;
@@ -53,20 +52,23 @@ public class Client implements OnClientExited {
                 handleReceived(clientCommand);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Lost connection with the server.");
         } finally {
-            userInput.closeStreams();
+            if (userInput != null) {
+                userInput.closeStreams();
+            }
         }
     }
 
     private void handleReceived(ClientCommand clientCommand) {
-        System.out.println(clientCommand);
+        System.out.println("Command: " + clientCommand);
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
         // Parse or unknown command error handling.
-        if(createdMessage instanceof MessageError) {
+        if (createdMessage instanceof MessageError) {
             System.out.println(createdMessage.toString());
             return;
-        } if(createdMessage instanceof MessageGoodStatus){
+        }
+        if (createdMessage instanceof MessageGoodStatus) {
             System.out.println("From Server: OK");
         }
 
@@ -116,7 +118,7 @@ public class Client implements OnClientExited {
 
     private void handleEncPrivateReceive(JsonMessage jsonMessage) {
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
-        System.out.println("PRIVATE "+jsonMessage);
+        System.out.println("PRIVATE " + jsonMessage);
         String decrMessage = encryptionHandler.decryptWithSessionKey(message.getMessage(),
                 getSessionKey(message.getUsername()));
 

@@ -235,11 +235,16 @@ public class ServerSideClient implements Runnable {
     }
 
     private void pong() {
-        //TODO: add error for ping wihtour pong
         System.out.println("Received Pong!");
         if (pingPongInteraction != null) {
             System.out.println("Notifying that Pong was received.");
+            if(pingPongInteraction.pingState()) {
+                if(DISPLAY_RAW_DEBUG) System.out.println("PONG WIHTOUT PING");
+                sendToClient(PingPongHeader.PONG_ERROR, new MessageStatuslessError("8000"));
+            }
             pingPongInteraction.receivedPong();
+        } else {
+            sendToClient(PingPongHeader.PONG_ERROR, new MessageStatuslessError("8000"));
         }
     }
 

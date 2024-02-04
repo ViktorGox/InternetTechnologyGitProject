@@ -56,16 +56,13 @@ public class FileTransferClient extends Thread {
             while (otherClient == null) {
                 Thread.onSpinWait();
             }
-            System.out.println("WAITING NO MORE");
             OutputStream receiverOutputStream = otherClient.getOutputStream();
             byte[] checksum = digest.digest();
-            System.out.println(checksum.length);
-            System.out.println(Arrays.toString(checksum));
             receiverOutputStream.write(checksum);
             receiverOutputStream.flush();
             digestInputStream.transferTo(receiverOutputStream);
             receiverOutputStream.close();
-            System.out.println("ENDED");
+            System.out.println("ENDED FILE TRANSFER");
         } catch (IOException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }

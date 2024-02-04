@@ -1,7 +1,9 @@
 package Server;
 
 import Shared.Headers.ByeHeader;
+import Shared.Headers.LoginHeader;
 import Shared.Messages.JsonMessage;
+import Shared.Messages.MessageJoined;
 import Shared.Messages.MessageLogin;
 
 import java.io.IOException;
@@ -70,6 +72,7 @@ public class Server {
 
     public synchronized void removeClient(ServerSideClient serverSideClient) {
         clients.remove(serverSideClient);
+        //TODO: NOT HERE, IN LOG OUT!!!! THIS CRASHES
         broadcastAll(ByeHeader.LEFT, new MessageLogin(serverSideClient.getUsername()));
         printClients();
     }
@@ -126,7 +129,7 @@ public class Server {
     @SuppressWarnings("rawtypes")
     private void broadcastAll(Enum header, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
-            if (client.getUsername().equals(username)) {
+            if (client.getUsername() != null && client.getUsername().equals(username)) {
                 continue;
             }
             client.sendToClient(header, message);

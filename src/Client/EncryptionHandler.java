@@ -69,6 +69,9 @@ public class EncryptionHandler {
         System.out.println("Adding a key for: " + username + ". Key is: " + sessionKey);
         sessionKeys.put(username, sessionKey);
     }
+    public boolean removeSessionKey(String username) {
+        return sessionKeys.remove(username) != null;
+    }
 
     public String encryptWithSessionKey(String plainText, byte[] sessionKey) {
         try {

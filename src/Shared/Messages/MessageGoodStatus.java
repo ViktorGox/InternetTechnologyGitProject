@@ -8,4 +8,8 @@ public class MessageGoodStatus extends JsonMessage{
     public MessageGoodStatus() {
         this.status = "OK";
     }
+
+    public String getStatus() {
+        return status;
+    }
 }

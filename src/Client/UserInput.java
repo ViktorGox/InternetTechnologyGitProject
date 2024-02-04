@@ -6,7 +6,6 @@ import Shared.Messages.Encryption.MessageEncPrivateSend;
 import Shared.Messages.Encryption.MessageReqPublicKey;
 import Shared.Messages.*;
 import Shared.Messages.PrivateMessage.MessagePrivateSend;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,7 +13,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -169,11 +167,7 @@ public class UserInput implements Runnable {
                 joinedGame = false;
             } else {
                 MessageGuess messageGuess = new MessageGuess(input);
-                try {
-                    writer.println("GG_GUESS " + messageGuess.mapToJson());
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                client.send(GuessingGameHeader.GG_GUESS, messageGuess);
                 waitForGameResponse();
             }
         }
@@ -207,7 +201,7 @@ public class UserInput implements Runnable {
     }
 
     private void encryptedPrivateMessage() {
-        if(!client.isLoggedIn()) {
+        if (!client.isLoggedIn()) {
             System.out.println("You must be logged in to send an encrypted message: ");
             return;
         }
@@ -239,13 +233,12 @@ public class UserInput implements Runnable {
         client.send(EncryptedPrivateHeader.REQ_PUBLIC_KEY, new MessageReqPublicKey(receiver));
     }
 
-    protected void handleFireTransfer(String received) {
-        Map<String, String> map = JsonMessageExtractor.extractInformation(received);
-        String username = map.get("username");
-        if (username == null) {
-            throw new IllegalStateException("??? How did you receive this without having username in received???");
-        }
-        fileName = map.get("fileName");
+    protected void handleFireTransfer(JsonMessage jsonMessage) {
+        if (!(jsonMessage instanceof MessageFileTransfer)) System.out.println("handleFireTransfer conversion failed");
+        MessageFileTransfer message = (MessageFileTransfer) jsonMessage;
+
+        fileName = message.getFileName();
+        String username = message.getUsername();
         System.out.println(username + " wants to send you a file: " + fileName);
         System.out.println();
         System.out.println("""
@@ -268,7 +261,7 @@ public class UserInput implements Runnable {
     public void answerFileTransfer(String sender, boolean answer) {
         try {
             UUID uuid = UUID.randomUUID();
-            client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer),uuid));
+            client.send(FileTransferHeader.FILE_TRF_ANSWER, new MessageFileTrfAnswer(sender, String.valueOf(answer), uuid));
             if (answer) {
                 Socket clientSocket = new Socket("127.0.0.1", 1338);
                 FileTransferReceiver fileTransferReceiver = new FileTransferReceiver(clientSocket, fileName, uuid);

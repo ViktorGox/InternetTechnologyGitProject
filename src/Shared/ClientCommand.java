@@ -21,6 +21,11 @@ public class ClientCommand {
         return header.toString();
     }
 
+
+    public Enum getCommandAsEnum() {
+        return header;
+    }
+
     public String getMessage() {
         return message;
     }

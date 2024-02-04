@@ -1,5 +1,6 @@
 package Client;
 
+import Server.GuessGame;
 import Shared.Headers.*;
 import Shared.Messages.Broadcast.MessageBroadcastRequest;
 import Shared.Messages.Encryption.MessageEncPrivateSend;
@@ -179,7 +180,7 @@ public class UserInput implements Runnable {
     }
 
     private void joinGame() {
-        writer.println("GG_JOIN");
+        client.send(GuessingGameHeader.GG_JOIN);
         waitForGameResponse();
         if (joinedGame) {
             waitForGameStart();

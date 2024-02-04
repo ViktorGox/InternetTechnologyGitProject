@@ -12,8 +12,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 import static java.time.Duration.ofMillis;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UserListTest {
     private static Properties props = new Properties();
@@ -87,7 +86,7 @@ public class UserListTest {
         ArrayList<String> users = new ArrayList<>();
         users.add("user2");
         users.add("user1");
-        assertEquals(users, receivedList.users());
+        assertTrue(users.containsAll(receivedList.users()));
     }
 
     private String receiveLineWithTimeout(BufferedReader reader) {

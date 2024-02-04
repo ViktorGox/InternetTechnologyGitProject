@@ -96,7 +96,7 @@ public class MessageFactory {
             case "ENC_PRIVATE_SEND", "ENC_PRIVATE_RECEIVE" -> {
                 return convertToBasicVersion(received.getMessage(), MessageEncPrivateSend.class);
             }
-            case "GG_CREATE", "PING", "PONG", "BYE", "GG_LEAVE", "USER_LIST", "DSCN" -> {
+            case "GG_CREATE", "PING", "PONG", "BYE", "GG_LEAVE", "USER_LIST", "DSCN", "GG_JOIN" -> {
                 return null;
             }
         }

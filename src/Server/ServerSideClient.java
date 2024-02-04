@@ -226,14 +226,11 @@ public class ServerSideClient implements Runnable {
         if (!(jsonMessage instanceof MessageLogin)) System.out.println("ServerSideClient from command Log in says: " +
                 "??????? fr fr");
         MessageLogin message = (MessageLogin) jsonMessage;
-        String username = message.getUsername();
-
-    private void commandLogIn(Map<String, String> message) {
         JsonMessage finalMessage;
         if(message == null){
             finalMessage = new MessageError("5001");
         } else {
-            String username = message.get("username");
+            String username = message.getUsername();
 
 
             if (isLoggedIn) {
@@ -266,19 +263,6 @@ public class ServerSideClient implements Runnable {
 
         String receiver = message.getUsername();
         String messageS = message.getMessage();
-        if (!isLoggedIn) {
-            sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageError("6000"));
-            return;
-        }
-        sendToClient(BroadcastHeader.BROADCAST_RESP, new MessageGoodStatus());
-
-        JsonMessage messageToBroadcast = new MessageBroadcast(this.username, messageS);
-        Server.getInstance().broadcastAllIgnoreSender(BroadcastHeader.BROADCAST, messageToBroadcast, this.username);
-    }
-
-    private void commandPrivateSend(Map<String, String> message) {
-        String receiver = message.get("username");
-        String messageS = message.get("message");
 
         JsonMessage finalMessage;
         if (!isLoggedIn) {

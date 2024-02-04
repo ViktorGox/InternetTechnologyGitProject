@@ -1,5 +1,6 @@
 package Server;
 
+import Client.Client;
 import Shared.Headers.PingPongHeader;
 
 public class PingPongInteraction implements Runnable {
@@ -13,7 +14,7 @@ public class PingPongInteraction implements Runnable {
 
     @Override
     public void run() {
-        while(disconnected) {
+        while (disconnected) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -26,12 +27,12 @@ public class PingPongInteraction implements Runnable {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            if(!responded) {
+            if (!responded) {
                 System.out.println("Did not receive an answer. Closing connection.");
                 client.closeSocket();
                 return;
             }
-            System.out.println("Receive an answer. Repeating.");
+            if (Client.DISPLAY_RAW_DEBUG) System.out.println("Receive an answer. Repeating.");
         }
     }
 
@@ -41,5 +42,9 @@ public class PingPongInteraction implements Runnable {
 
     public synchronized void receivedPong() {
         responded = true;
+    }
+
+    public boolean pingState() {
+        return responded;
     }
 }

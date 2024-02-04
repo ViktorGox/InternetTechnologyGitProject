@@ -72,6 +72,7 @@ public class UserInput implements Runnable {
                 case "6" -> guessGame();
                 case "7" -> joinGame();
                 case "8" -> userList();
+                case "9" -> fakePong();
                 case "0" -> logout();
             }
             if (!terminate) {
@@ -81,6 +82,10 @@ public class UserInput implements Runnable {
         }
         System.out.println("EXITED");
         fireEvent();
+    }
+
+    private void fakePong() {
+        client.send(PingPongHeader.PONG);
     }
 
     private void userList() {

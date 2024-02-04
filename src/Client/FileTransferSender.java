@@ -25,7 +25,7 @@ public class FileTransferSender extends Thread {
             FileInputStream fileInputStream = new FileInputStream(path);
             OutputStream outputStream = socket.getOutputStream();
             fileInputStream.transferTo(outputStream);
-            outputStream.close();
+            //socket.close
             System.out.println("UPLOAD DONE");
         } catch (IOException e) {
             throw new RuntimeException(e);

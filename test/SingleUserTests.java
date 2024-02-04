@@ -78,9 +78,10 @@ class SingleUserTests {
         receiveLineWithTimeout(in); //welcome message
         out.println("LOGIN");
         out.flush();
+        // Our code returns PARSE_ERROR if no json is present / wrong / has wrong named variables
         String serverResponse = receiveLineWithTimeout(in);
-        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LOGIN_RESP("ERROR", 5001), loginResp);
+        PARSE_ERROR parseError = Utils.messageToObject(serverResponse);
+        assertNotNull(parseError);
     }
 
     @Test

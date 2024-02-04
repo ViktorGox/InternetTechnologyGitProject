@@ -124,10 +124,8 @@ public class Client implements OnClientExited {
             System.out.println("handleEncPrivateReceive conversion failed");
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
 
-        if (DISPLAY_RAW_DEBUG) System.out.println("Received encrypted message: " + message.getMessage());
-        if (DISPLAY_RAW_DEBUG) System.out.println("Searching for session key with username: " + message.getUsername());
-        String decrMessage = encryptionHandler.decryptWithSessionKey(message.getUsername(),
-                getSessionKey(message.getMessage()));
+        String decrMessage = encryptionHandler.decryptWithSessionKey(message.getMessage(),
+                getSessionKey(message.getUsername()));
 
         if (DISPLAY_RAW_DEBUG) System.out.println("Decrypted received message: " + decrMessage);
     }

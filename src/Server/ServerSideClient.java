@@ -257,8 +257,6 @@ public class ServerSideClient implements Runnable {
             finalMessage = new MessageError("5001");
         } else {
             String username = message.getUsername();
-
-
             if (isLoggedIn) {
                 finalMessage = new MessageError("5002");
             } else if (!username.matches(VALID_USERNAME_REGEX)) {

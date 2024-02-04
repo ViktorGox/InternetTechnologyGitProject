@@ -63,6 +63,9 @@ public class EncryptionHandler {
     }
 
     public byte[] getSessionKey(String username) {
+        sessionKeys.forEach((key, value) -> {
+            System.out.println(key + " <-> " + value);
+        });
         return sessionKeys.get(username);
     }
     public void addSessionKey(String username, byte[] sessionKey) {

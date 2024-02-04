@@ -16,6 +16,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.PublicKey;
+import java.util.List;
+import java.util.Map;
 
 public class Client implements OnClientExited {
     private UserInput userInput;
@@ -61,13 +63,10 @@ public class Client implements OnClientExited {
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
         // Parse or unknown command error handling.
         if(createdMessage instanceof MessageError) {
-            if(((MessageError) createdMessage).getCode().equals("0")) {
-                System.out.println("Failed to parse the given data to json.");
-            }
-            if(((MessageError) createdMessage).getCode().equals("1")) {
-                System.out.println("Failed to find a command with the given header.");
-            }
+            System.out.println(createdMessage.toString());
             return;
+        } if(createdMessage instanceof MessageGoodStatus){
+            System.out.println("From Server: OK");
         }
 
         switch (clientCommand.getCommand()) {
@@ -76,7 +75,7 @@ public class Client implements OnClientExited {
             case "GG_GUESS_RESP" -> handleGuessResponse(createdMessage);
             case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(createdMessage);
             case "GG_GUESS_START" -> handleStartGame(createdMessage);
-            case "GG_GUESS_END" -> userInput.setJoinedGame(false);
+            case "GG_GUESS_END" -> handleGuessEnd(createdMessage);
             case "FILE_TRF_ANSWER" -> handleFileTransferAnswer(createdMessage);
             case "LOGIN_RESP" -> handleEncryption(createdMessage);
             case "REQ_PUBLIC_KEY" -> handlePublicKeyRequest(createdMessage);
@@ -86,6 +85,11 @@ public class Client implements OnClientExited {
             case "ENC_PRIVATE_RECEIVE" -> handleEncPrivateReceive(createdMessage);
             case "LEFT" -> handleLeft(createdMessage);
         }
+    }
+
+    private void handleGuessEnd(JsonMessage message) {
+        System.out.println(message.toString());
+        userInput.setJoinedGame(false);
     }
 
     private void handleLeft(JsonMessage jsonMessage) {
@@ -201,10 +205,8 @@ public class Client implements OnClientExited {
 
     private void handleGuessResponse(JsonMessage jsonMessage) {
         MessageGuess message = (MessageGuess) jsonMessage;
+        System.out.println(message.toString());
 
-        if (message.getGuess().equals("0")) {
-            userInput.setJoinedGame(false);
-        }
         userInput.setResponse(true);
     }
 

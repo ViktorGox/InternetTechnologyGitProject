@@ -141,7 +141,7 @@ public class UserInput implements Runnable {
     }
 
     private void guessGame() {
-        writer.println("GG_CREATE");
+        client.send(GuessingGameHeader.GG_CREATE);
         waitForGameResponse();
         if (joinedGame) {
             waitForGameStart();
@@ -165,6 +165,7 @@ public class UserInput implements Runnable {
     }
 
     private void makeGuess() {
+        System.out.println("GAME STARTED");
         while (joinedGame) {
             System.out.println("If you want to quit enter q");
             System.out.println("Make a guess between 1 and 50");

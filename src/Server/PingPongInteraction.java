@@ -1,5 +1,7 @@
 package Server;
 
+import Shared.Headers.PingPongHeader;
+
 public class PingPongInteraction implements Runnable {
     private boolean disconnected = true;
     private final ServerSideClient client;
@@ -18,7 +20,7 @@ public class PingPongInteraction implements Runnable {
                 throw new RuntimeException(e);
             }
             responded = false;
-            client.sendToClient("PING");
+            client.sendToClient(PingPongHeader.PING);
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {

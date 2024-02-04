@@ -2,6 +2,7 @@ package Server;
 
 import Shared.Headers.ByeHeader;
 import Shared.Headers.LoginHeader;
+import Shared.Headers.OtherHeader;
 import Shared.Messages.JsonMessage;
 import Shared.Messages.MessageJoined;
 import Shared.Messages.MessageLogin;
@@ -159,7 +160,6 @@ public class Server {
         }
         receiverClient.sendToClient(header, message);
     }
-
     public Set<ServerSideClient> getClients() {
         return clients;
     }

@@ -67,7 +67,23 @@ public class ServerSideClient implements Runnable {
     }
 
     public void determineAction(ClientCommand clientCommand) {
+        if(DISPLAY_RAW_DEBUG) System.out.println(clientCommand);
+        if(clientCommand.getCommandAsEnum() == null) {
+            sendToClient(OtherHeader.UNKNOWN_COMMAND);
+            return;
+        }
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
+        // Parse or unknown command error handling.
+        if(createdMessage instanceof MessageError) {
+            if(((MessageError) createdMessage).getCode().equals("0")) {
+                sendToClient(OtherHeader.PARSE_ERROR);
+            }
+            if(((MessageError) createdMessage).getCode().equals("1")) {
+                sendToClient(OtherHeader.UNKNOWN_COMMAND);
+            }
+            return;
+        }
+
         if(DISPLAY_RAW_DEBUG) System.out.println("Handling: " + createdMessage);
         switch (clientCommand.getCommand()) {
             case "LOGIN" -> commandLogIn(createdMessage);
@@ -393,9 +409,9 @@ public class ServerSideClient implements Runnable {
         }
     }
 
-    public void sendToClient(String code) {
-        System.out.println("Sending to client: " + code);
-        writer.println(code);
+    public void sendToClient(Enum header) {
+        System.out.println("Sending to client: " + header);
+        writer.println(header);
     }
 
     @Override

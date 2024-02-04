@@ -335,6 +335,7 @@ public class ServerSideClient implements Runnable {
             Server.getInstance().broadcastAllIgnoreSender(GuessingGameHeader.GG_INVITATION, new MessageInvite(username), this.username);
             Server.guessGame = new GuessGame(this);
             Server.guessGame.start();
+            hasJoinedGame = true;
         }
         sendToClient(GuessingGameHeader.GG_CREATE_RESP, messageToSend);
 
@@ -355,6 +356,7 @@ public class ServerSideClient implements Runnable {
         } else {
             messageToSend = new MessageGoodStatus();
             Server.guessGame.addGamer(this);
+            hasJoinedGame = true;
         }
         sendToClient(GuessingGameHeader.GG_JOIN_RESP, messageToSend);
     }

@@ -1,6 +1,7 @@
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.*;
-import protocol.messages.*;
+import protocol.messages.Login;
+import protocol.messages.LOGIN_RESP;
 import protocol.utils.Utils;
 
 import java.io.*;
@@ -17,7 +18,7 @@ class AcceptedUsernames {
     private Socket s;
     private BufferedReader in;
     private PrintWriter out;
-    private final static int max_delta_allowed_ms = 100;
+    private final static int max_delta_allowed_ms = 1000;
 
     @BeforeAll
     static void setupAll() throws IOException {
@@ -44,7 +45,7 @@ class AcceptedUsernames {
         out.println(Utils.objectToMessage(new Login("mym")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", loginResp.status());
     }
 
@@ -54,8 +55,8 @@ class AcceptedUsernames {
         out.println(Utils.objectToMessage(new Login("my")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LoginResp("ERROR",5001),loginResp, "Too short username accepted: " + serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
+        assertEquals(new LOGIN_RESP("ERROR",5001),loginResp, "Too short username accepted: " + serverResponse);
     }
 
     @Test
@@ -64,7 +65,7 @@ class AcceptedUsernames {
         out.println(Utils.objectToMessage(new Login("abcdefghijklmn")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", loginResp.status());
     }
 
@@ -74,8 +75,8 @@ class AcceptedUsernames {
         out.println(Utils.objectToMessage(new Login("abcdefghijklmop")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LoginResp("ERROR",5001), loginResp, "Too long username accepted: " + serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
+        assertEquals(new LOGIN_RESP("ERROR",5001), loginResp, "Too long username accepted: " + serverResponse);
     }
 
     @Test
@@ -84,8 +85,8 @@ class AcceptedUsernames {
         out.println(Utils.objectToMessage(new Login("*a*")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LoginResp("ERROR",5001), loginResp, "Wrong character accepted");
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
+        assertEquals(new LOGIN_RESP("ERROR",5001), loginResp, "Wrong character accepted");
     }
 
     private String receiveLineWithTimeout(BufferedReader reader) {

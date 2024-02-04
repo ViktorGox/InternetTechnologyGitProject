@@ -13,14 +13,14 @@ public class Utils {
     private final static Map<Class<?>, String> objToNameMapping = new HashMap<>();
     static {
         objToNameMapping.put(Login.class, "LOGIN");
-        objToNameMapping.put(LoginResp.class, "LOGIN_RESP");
-        objToNameMapping.put(BroadcastReq.class, "BROADCAST_REQ");
-        objToNameMapping.put(BroadcastResp.class, "BROADCAST_RESP");
-        objToNameMapping.put(Broadcast.class, "BROADCAST");
-        objToNameMapping.put(Joined.class, "JOINED");
-        objToNameMapping.put(ParseError.class, "PARSE_ERROR");
+        objToNameMapping.put(LOGIN_RESP.class, "LOGIN_RESP");
+        objToNameMapping.put(BROADCAST_REQ.class, "BROADCAST_REQ");
+        objToNameMapping.put(BROADCAST_RESP.class, "BROADCAST_RESP");
+        objToNameMapping.put(BROADCAST.class, "BROADCAST");
+        objToNameMapping.put(JOINED.class, "JOINED");
+        objToNameMapping.put(PARSE_ERROR.class, "PARSE_ERROR");
         objToNameMapping.put(Pong.class, "PONG");
-        objToNameMapping.put(PongError.class, "PONG_ERROR");
+        objToNameMapping.put(PONG_ERROR.class, "PONG_ERROR");
         objToNameMapping.put(Welcome.class, "WELCOME");
         objToNameMapping.put(Ping.class, "PING");
     }

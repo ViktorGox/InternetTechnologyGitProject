@@ -64,9 +64,9 @@ class MultipleUserTests {
 
         //JOINED is received by user1 when user2 connects
         String resIdent = receiveLineWithTimeout(inUser1);
-        Joined joined = Utils.messageToObject(resIdent);
+        JOINED joined = Utils.messageToObject(resIdent);
 
-        assertEquals(new Joined("user2"),joined);
+        assertEquals(new JOINED("user2"),joined);
     }
 
     @Test
@@ -89,30 +89,30 @@ class MultipleUserTests {
         receiveLineWithTimeout(inUser1); //JOINED
 
         //send BROADCAST from user 1
-        outUser1.println(Utils.objectToMessage(new BroadcastReq("messagefromuser1")));
+        outUser1.println(Utils.objectToMessage(new BROADCAST_REQ("messagefromuser1")));
 
         outUser1.flush();
         String fromUser1 = receiveLineWithTimeout(inUser1);
-        BroadcastResp broadcastResp1 = Utils.messageToObject(fromUser1);
+        BROADCAST_RESP broadcastResp1 = Utils.messageToObject(fromUser1);
 
         assertEquals("OK", broadcastResp1.status());
 
         String fromUser2 = receiveLineWithTimeout(inUser2);
-        Broadcast broadcast2 = Utils.messageToObject(fromUser2);
+        BROADCAST broadcast2 = Utils.messageToObject(fromUser2);
 
-        assertEquals(new Broadcast("user1","messagefromuser1"), broadcast2);
+        assertEquals(new BROADCAST("user1","messagefromuser1"), broadcast2);
 
         //send BROADCAST from user 2
-        outUser2.println(Utils.objectToMessage(new BroadcastReq("messagefromuser2")));
+        outUser2.println(Utils.objectToMessage(new BROADCAST_REQ("messagefromuser2")));
         outUser2.flush();
         fromUser2 = receiveLineWithTimeout(inUser2);
-        BroadcastResp broadcastResp2 = Utils.messageToObject(fromUser2);
+        BROADCAST_RESP broadcastResp2 = Utils.messageToObject(fromUser2);
         assertEquals("OK", broadcastResp2.status());
 
         fromUser1 = receiveLineWithTimeout(inUser1);
-        Broadcast broadcast1 = Utils.messageToObject(fromUser1);
+        BROADCAST broadcast1 = Utils.messageToObject(fromUser1);
 
-        assertEquals(new Broadcast("user2","messagefromuser2"), broadcast1);
+        assertEquals(new BROADCAST("user2","messagefromuser2"), broadcast1);
     }
 
     @Test
@@ -129,8 +129,8 @@ class MultipleUserTests {
         outUser2.println(Utils.objectToMessage(new Login("user1")));
         outUser2.flush();
         String resUser2 = receiveLineWithTimeout(inUser2);
-        LoginResp loginResp = Utils.messageToObject(resUser2);
-        assertEquals(new LoginResp("ERROR", 5000), loginResp);
+        LOGIN_RESP loginResp = Utils.messageToObject(resUser2);
+        assertEquals(new LOGIN_RESP("ERROR", 5000), loginResp);
     }
 
     private String receiveLineWithTimeout(BufferedReader reader) {

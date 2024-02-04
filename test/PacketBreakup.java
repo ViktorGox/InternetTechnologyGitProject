@@ -1,7 +1,7 @@
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.*;
-import protocol.messages.BroadcastResp;
-import protocol.messages.LoginResp;
+import protocol.messages.BROADCAST_RESP;
+import protocol.messages.LOGIN_RESP;
 import protocol.utils.Utils;
 
 import java.io.*;
@@ -50,10 +50,10 @@ class PacketBreakup {
         out.print("CAST_REQ {\"message\":\"a\"}\r\n");
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", loginResp.status());
         serverResponse = receiveLineWithTimeout(in);
-        BroadcastResp broadcastResp = Utils.messageToObject(serverResponse);
+        BROADCAST_RESP broadcastResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", broadcastResp.status());
     }
 

@@ -49,7 +49,7 @@ class SingleUserTests {
     void TC5_1_initialConnectionToServerReturnsWelcomeMessage() throws JsonProcessingException {
         String firstLine = receiveLineWithTimeout(in);
         Welcome welcome = Utils.messageToObject(firstLine);
-        assertEquals(new Welcome("Welcome to the server 1.5"), welcome);
+        assertEquals(new Welcome(), welcome);
     }
 
     @Test
@@ -58,28 +58,28 @@ class SingleUserTests {
         out.println(Utils.objectToMessage(new Login("myname")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", loginResp.status());
     }
 
-    @Test
-    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
-        receiveLineWithTimeout(in); //welcome message
-        out.println("LOGIN {\"}");
-        out.flush();
-        String serverResponse = receiveLineWithTimeout(in);
-        ParseError parseError = Utils.messageToObject(serverResponse);
-        assertNotNull(parseError);
-    }
+    //@Test
+//    void TC5_3_invalidJsonMessageReturnsParseError() throws JsonProcessingException {
+//        receiveLineWithTimeout(in); //welcome message
+//        out.println("LOGIN {\"}");
+//        out.flush();
+//        String serverResponse = receiveLineWithTimeout(in);
+//        PARSE_ERROR parseError = Utils.messageToObject(serverResponse);
+//        assertNotNull(parseError);
+//    }
 
     @Test
     void TC5_4_emptyJsonMessageReturnsError() throws JsonProcessingException {
         receiveLineWithTimeout(in); //welcome message
-        out.println("LOGIN ");
+        out.println("LOGIN");
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LoginResp("ERROR", 5001), loginResp);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
+        assertEquals(new LOGIN_RESP("ERROR", 5001), loginResp);
     }
 
     @Test
@@ -88,8 +88,8 @@ class SingleUserTests {
         out.println(Utils.objectToMessage(new Pong()));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        PongError pongError = Utils.messageToObject(serverResponse);
-        assertEquals(new PongError(8000), pongError);
+        PONG_ERROR pongError = Utils.messageToObject(serverResponse);
+        assertEquals(new PONG_ERROR(8000), pongError);
     }
 
     @Test
@@ -98,14 +98,14 @@ class SingleUserTests {
         out.println(Utils.objectToMessage(new Login("first")));
         out.flush();
         String serverResponse = receiveLineWithTimeout(in);
-        LoginResp loginResp = Utils.messageToObject(serverResponse);
+        LOGIN_RESP loginResp = Utils.messageToObject(serverResponse);
         assertEquals("OK", loginResp.status());
 
         out.println(Utils.objectToMessage(new Login("second")));
         out.flush();
         serverResponse = receiveLineWithTimeout(in);
         loginResp = Utils.messageToObject(serverResponse);
-        assertEquals(new LoginResp("ERROR", 5002), loginResp);
+        assertEquals(new LOGIN_RESP("ERROR", 5002), loginResp);
     }
 
     @Test

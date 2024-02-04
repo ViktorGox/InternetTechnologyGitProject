@@ -40,6 +40,7 @@ public class ServerSideClient implements Runnable {
 
     @Override
     public void run() {
+        writer.println("WELCOME");
         String inputLine;
         try {
             while ((inputLine = reader.readLine()) != null) {
@@ -191,23 +192,28 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandLogIn(Map<String, String> message) {
-        String username = message.get("username");
-
         JsonMessage finalMessage;
-        if (isLoggedIn) {
-            finalMessage = new MessageError("5000");
-        } else if (!username.matches(VALID_USERNAME_REGEX)) {
+        if(message == null){
             finalMessage = new MessageError("5001");
-        } else if (Server.getInstance().getUser(username) != null) {
-            finalMessage = new MessageError("5002");
         } else {
-            finalMessage = new MessageGoodStatus();
-            isLoggedIn = true;
-            this.username = username;
-            if (Server.getInstance().PERFORM_PING_PONG) {
-                pingPongInteraction = new PingPongInteraction(this);
-                Thread pingPongThread = new Thread(pingPongInteraction);
-                pingPongThread.start();
+            String username = message.get("username");
+
+
+            if (isLoggedIn) {
+                finalMessage = new MessageError("5002");
+            } else if (!username.matches(VALID_USERNAME_REGEX)) {
+                finalMessage = new MessageError("5001");
+            } else if (Server.getInstance().getUser(username) != null) {
+                finalMessage = new MessageError("5000");
+            } else {
+                finalMessage = new MessageGoodStatus();
+                isLoggedIn = true;
+                this.username = username;
+                if (Server.getInstance().PERFORM_PING_PONG) {
+                    pingPongInteraction = new PingPongInteraction(this);
+                    Thread pingPongThread = new Thread(pingPongInteraction);
+                    pingPongThread.start();
+                }
             }
         }
 
@@ -222,7 +228,7 @@ public class ServerSideClient implements Runnable {
             sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageError("6000"));
             return;
         }
-        sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageGoodStatus());
+        sendToClient(BroadcastHeader.BROADCAST_RESP, new MessageGoodStatus());
 
         JsonMessage messageToBroadcast = new MessageBroadcast(this.username, messageS);
         Server.getInstance().broadcastAllIgnoreSender(BroadcastHeader.BROADCAST, messageToBroadcast, this.username);
@@ -331,7 +337,7 @@ public class ServerSideClient implements Runnable {
     public void sendToClient(Enum header, JsonMessage message) {
         try {
             System.out.println("Sending to client: " + header + " " + message.mapToJson());
-            writer.println(header + message.mapToJson());
+            writer.println(header + " " + message.mapToJson());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

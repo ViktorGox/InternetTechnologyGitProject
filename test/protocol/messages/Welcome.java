@@ -1,3 +1,3 @@
 package protocol.messages;
 
-public record Welcome(String msg) {}
+public record Welcome() {}

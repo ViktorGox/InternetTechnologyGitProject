@@ -23,6 +23,12 @@ public class Utils {
         objToNameMapping.put(PONG_ERROR.class, "PONG_ERROR");
         objToNameMapping.put(Welcome.class, "WELCOME");
         objToNameMapping.put(Ping.class, "PING");
+        objToNameMapping.put(PRIVATE_RESP.class, "PRIVATE_RESP");
+        objToNameMapping.put(PrivateSend.class, "PRIVATE_SEND");
+        objToNameMapping.put(PrivateReceive.class, "PRIVATE_RECEIVE");
+        objToNameMapping.put(UserList.class, "USER_LIST");
+        objToNameMapping.put(UserListResp.class, "USER_LIST_RESP");
+        objToNameMapping.put(UserListError.class, "USER_LIST_RESP");
     }
 
     public static String objectToMessage(Object object) throws JsonProcessingException {

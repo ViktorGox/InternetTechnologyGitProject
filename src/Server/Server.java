@@ -130,7 +130,7 @@ public class Server {
     @SuppressWarnings("rawtypes")
     private void broadcastAll(Enum header, JsonMessage message, String username) {
         for (ServerSideClient client : clients) {
-            if (client.getUsername() != null && client.getUsername().equals(username)) {
+            if (client.getUsername() == null || client.getUsername().equals(username)) {
                 continue;
             }
             client.sendToClient(header, message);

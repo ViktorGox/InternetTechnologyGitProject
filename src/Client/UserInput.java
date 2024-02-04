@@ -158,7 +158,6 @@ public class UserInput implements Runnable {
 
     private void waitForGameResponse() {
         while (!response && !terminate) {
-            System.out.println("Waiting");
             Thread.onSpinWait();
         }
         response = false;

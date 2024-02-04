@@ -21,4 +21,9 @@ public class MessagePrivateReceive extends JsonMessage {
     public String getMessage() {
         return message;
     }
+
+    @Override
+    public String toString() {
+        return username + " messaged you: " + message;
+    }
 }

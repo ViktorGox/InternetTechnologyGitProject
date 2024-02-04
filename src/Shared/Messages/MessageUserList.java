@@ -15,4 +15,8 @@ public class MessageUserList extends JsonMessage{
     public MessageUserList(@JsonProperty("users") List<String> serverSideClients) {
         this.users = serverSideClients;
     }
+
+    public List<String> getUsers() {
+        return users;
+    }
 }

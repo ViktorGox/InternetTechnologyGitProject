@@ -61,7 +61,6 @@ public class Client implements OnClientExited {
     }
 
     private void handleReceived(ClientCommand clientCommand) {
-        System.out.println("Command: " + clientCommand);
         JsonMessage createdMessage = MessageFactory.convertToMessageClass(clientCommand);
         // Parse or unknown command error handling.
         if (createdMessage instanceof MessageError) {
@@ -69,12 +68,13 @@ public class Client implements OnClientExited {
             return;
         }
         if (createdMessage instanceof MessageGoodStatus) {
-            System.out.println("From Server: OK");
+            System.out.println("From Server: OK!");
         }
 
         switch (clientCommand.getCommand()) {
             case "PING" -> handlePingPong();
             case "FILE_TRF" -> userInput.handleFireTransfer(createdMessage);
+            case "BROADCAST", "PRIVATE_RECEIVE" -> System.out.println(createdMessage);
             case "GG_GUESS_RESP" -> handleGuessResponse(createdMessage);
             case "GG_CREATE_RESP", "GG_JOIN_RESP" -> handleJoiningGame(createdMessage);
             case "GG_GUESS_START" -> handleStartGame(createdMessage);
@@ -87,6 +87,15 @@ public class Client implements OnClientExited {
             case "SESSION_KEY_CREATE_RESP" -> handleSessionKeyCreateResp(createdMessage);
             case "ENC_PRIVATE_RECEIVE" -> handleEncPrivateReceive(createdMessage);
             case "LEFT" -> handleLeft(createdMessage);
+            case "USER_LIST_RESP" -> handleUserList(createdMessage);
+        }
+    }
+
+    private void handleUserList(JsonMessage jsonMessage) {
+        MessageUserList message = (MessageUserList) jsonMessage;
+        System.out.println("Currently logged in users: ");
+        for (String user : message.getUsers()) {
+            System.out.println(user);
         }
     }
 
@@ -119,11 +128,11 @@ public class Client implements OnClientExited {
 
     private void handleEncPrivateReceive(JsonMessage jsonMessage) {
         MessageEncPrivateSend message = (MessageEncPrivateSend) jsonMessage;
-        System.out.println("PRIVATE " + jsonMessage);
         String decrMessage = encryptionHandler.decryptWithSessionKey(message.getMessage(),
                 getSessionKey(message.getUsername()));
 
-        System.out.println("Decrypted received message: " + decrMessage);
+        System.out.println(((MessageEncPrivateSend) jsonMessage).getUsername() + " sent you an encrypted message: "
+                + decrMessage);
     }
 
     /**
@@ -203,6 +212,9 @@ public class Client implements OnClientExited {
     private void handleEncryption(JsonMessage jsonMessage) {
         if ((jsonMessage instanceof MessageGoodStatus)) {
             encryptionHandler = new EncryptionHandler();
+            System.out.println("Successfully logged in!");
+        } else {
+            System.out.println(jsonMessage);
         }
     }
 

@@ -27,7 +27,7 @@ public class ServerSideClient implements Runnable {
     private final PrintWriter writer;
     private final BufferedReader reader;
     private PublicKey publicKey;
-    private String username;
+    private String username = null;
     private PingPongInteraction pingPongInteraction;
     private boolean isLoggedIn;
     private boolean hasJoinedGame = false;
@@ -161,8 +161,13 @@ public class ServerSideClient implements Runnable {
     }
 
     private void commandUserList() {
-        MessageUserList messageUserList = new MessageUserList(Server.getInstance().getClients());
-        sendToClient(UserListHeader.USER_LIST_RESP, messageUserList);
+        JsonMessage finalMessage;
+        if(!isLoggedIn){
+            finalMessage = new MessageError("2000");
+        } else {
+            finalMessage = new MessageUserList(Server.getInstance().getClients());
+        }
+        sendToClient(UserListHeader.USER_LIST_RESP, finalMessage);
     }
 
     private void commandFileTransferAnswer(JsonMessage jsonMessage) {
@@ -243,14 +248,14 @@ public class ServerSideClient implements Runnable {
                 finalMessage = new MessageGoodStatus();
                 isLoggedIn = true;
                 this.username = username;
+                Server.getInstance().broadcastAllIgnoreSender(LoginHeader.JOINED,
+                        new MessageJoined(username), username);
                 if (Server.getInstance().PERFORM_PING_PONG) {
                     pingPongInteraction = new PingPongInteraction(this);
                     Thread pingPongThread = new Thread(pingPongInteraction);
                     pingPongThread.start();
                 }
             }
-            Server.getInstance().broadcastAllIgnoreSender(LoginHeader.JOINED,
-                    new MessageJoined(username), username);
         }
 
         sendToClient(LoginHeader.LOGIN_RESP, finalMessage);
@@ -293,7 +298,7 @@ public class ServerSideClient implements Runnable {
             sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageError("6000"));
             return;
         }
-        sendToClient(BroadcastHeader.BROADCAST_REQ, new MessageGoodStatus());
+        sendToClient(BroadcastHeader.BROADCAST_RESP, new MessageGoodStatus());
 
         JsonMessage messageToBroadcast = new MessageBroadcast(this.username, messageS);
         Server.getInstance().broadcastAllIgnoreSender(BroadcastHeader.BROADCAST, messageToBroadcast, this.username);
